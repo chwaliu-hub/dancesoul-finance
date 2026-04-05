@@ -544,7 +544,7 @@
 <header>
   <div class="header-title">
     <h1>靈動力肢體開發有限公司</h1>
-    <p>FINANCIAL MANAGEMENT SYSTEM · v2.0</p>
+    <p>FINANCIAL MANAGEMENT SYSTEM · v2.1</p>
   </div>
   <div class="header-right">
     <div class="period-selector">
@@ -886,12 +886,12 @@ async function fetchEntity(entity) {
   const res = await fetch(url);
   const json = await res.json();
   return (json.data || []).map(row => ({
-    id: String(row.id),
-    date: normalizeDate(row.date),
-    type: row.type,
-    amount: parseFloat(row.amount) || 0,
-    cat: row.cat,
-    note: row.note || ''
+    id: String(row.id || row['id'] || ''),
+    date: normalizeDate(row.date || row['date'] || ''),
+    type: (row.type || row['type'] || '').trim(),
+    amount: parseFloat(row.amount || row['amount']) || 0,
+    cat: (row.cat || row['cat'] || '').trim(),
+    note: (row.note || row['note '] || row[' note'] || '').trim()
   }));
 }
 
