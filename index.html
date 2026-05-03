@@ -628,6 +628,7 @@
   <button class="nav-btn" onclick="showPage('ledger')">明細</button>
   <button class="nav-btn" onclick="showPage('pl')">損益表</button>
   <button class="nav-btn" onclick="showPage('all')">總覽</button>
+  <button class="nav-btn" onclick="showPage('accounts')">帳戶</button>
   <button class="nav-btn" onclick="showPage('settings')">設定</button>
 </div>
 
@@ -757,7 +758,7 @@ function updateAccent() {
 function showPage(page) {
   currentPage = page;
   document.querySelectorAll('.nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['entry','ledger','pl','all','settings'][i] === page);
+    b.classList.toggle('active', ['entry','ledger','pl','all','accounts','settings'][i] === page);
   });
   renderPage();
 }
@@ -768,6 +769,7 @@ function renderPage() {
     case 'ledger':   renderLedger(); break;
     case 'pl':       renderPL(); break;
     case 'all':      renderAll(); break;
+    case 'accounts': renderAccounts(); break;
     case 'settings': renderSettings(); break;
   }
 }
@@ -790,6 +792,7 @@ function renderEntry() {
       <div class="batch-rows" id="batchRows"></div>
       <div class="batch-actions">
         <button class="btn" onclick="addBatchRow()">＋ 新增一列</button>
+        <button class="btn" onclick="copyFromLastMonth()" ${currentType==='expense'?'':'style="display:none"'}>複製上個月支出</button>
         <button class="btn btn-primary" onclick="submitBatch()">批次儲存</button>
         <span id="batchMsg" style="font-size:12px;color:var(--text2);margin-left:8px;"></span>
       </div>
@@ -871,6 +874,115 @@ async function submitBatch() {
 }
 
 // ============================================================
+// 複製上個月支出
+// ============================================================
+async function copyFromLastMonth() {
+  const now = new Date();
+  let y = currentYear, m = currentMonth;
+  // 如果沒有選月份就用當月
+  document.getElementById('batchMsg').textContent = '載入中...';
+
+  try {
+    const res = await api({ action: 'copyLastMonth', unit: currentUnit, year: y, month: m });
+    if (!res.success) { toast(res.message, 'err'); document.getElementById('batchMsg').textContent = ''; return; }
+
+    // 清空現有列，填入複製的資料
+    document.getElementById('batchRows').innerHTML = '';
+    res.data.forEach(r => {
+      addBatchRow();
+      const rows = document.querySelectorAll('#batchRows .batch-row');
+      const row = rows[rows.length - 1];
+      const inputs = row.querySelectorAll('input, select');
+      inputs[0].value = r.date;
+      // 設定類別
+      Array.from(inputs[1].options).forEach(o => { if (o.value === r.category) o.selected = true; });
+      inputs[2].value = r.description || '';
+      inputs[3].value = r.amount;
+      Array.from(inputs[4].options).forEach(o => { if (o.value === r.account) o.selected = true; });
+      inputs[5].value = r.note || '';
+    });
+
+    document.getElementById('batchMsg').textContent = '';
+    toast(`已載入上個月 ${res.data.length} 筆支出，確認後按「批次儲存」`, 'ok');
+  } catch (e) {
+    toast('載入失敗：' + e.message, 'err');
+    document.getElementById('batchMsg').textContent = '';
+  }
+}
+
+// ============================================================
+// 帳戶餘額頁
+// ============================================================
+async function renderAccounts() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">帳戶餘額</div>
+      <div id="accountBalContent"><div class="loading"><div class="spinner"></div>計算中...</div></div>
+    </div>
+  `;
+  await loadAccountBalance();
+}
+
+async function loadAccountBalance() {
+  const content = document.getElementById('accountBalContent');
+  if (!content) return;
+  try {
+    const res = await api({ action: 'getAccountBalance' });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+
+    const balances = res.data;
+    const entries = Object.entries(balances);
+    if (entries.length === 0) { content.innerHTML = '<div class="empty">尚無帳戶資料</div>'; return; }
+
+    const totalBalance = entries.reduce((s, [, v]) => s + v, 0);
+
+    content.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+        ${entries.map(([name, bal]) => `
+          <div class="summary-card">
+            <div class="summary-label">${name}</div>
+            <div class="summary-value ${bal >= 0 ? 'income' : 'expense'}">${bal >= 0 ? '' : '-'}${fmt(Math.abs(bal))}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="pl-net-bar">
+        <div class="pl-net-label">所有帳戶合計</div>
+        <div class="pl-net-value ${totalBalance >= 0 ? 'pos' : 'neg'}">${totalBalance >= 0 ? '' : '-'}${fmt(Math.abs(totalBalance))}</div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text3)">※ 餘額 = 初始餘額 + 所有收入 − 所有支出（三個單位合計）</div>
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+// ============================================================
+// CSV 匯出
+// ============================================================
+async function exportCSV() {
+  const ym = `${currentYear}年${currentMonth}月`;
+  toast('準備匯出...', '');
+  try {
+    const res = await api({ action: 'exportCSV', unit: currentUnit, year: currentYear, month: currentMonth });
+    if (!res.success) { toast(res.message, 'err'); return; }
+
+    // 加 BOM 讓 Excel 正確開啟中文
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + res.data], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DanceSoul_${UNIT_NAMES[currentUnit]}_${ym}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(`已匯出 ${ym} CSV`, 'ok');
+  } catch (e) {
+    toast('匯出失敗：' + e.message, 'err');
+  }
+}
+
+// ============================================================
 // LEDGER PAGE
 // ============================================================
 async function renderLedger() {
@@ -887,6 +999,7 @@ async function renderLedger() {
           <button class="type-btn ${currentType==='income'?'active income':''}" onclick="setLedgerType('income')">收入</button>
           <button class="type-btn ${currentType==='expense'?'active expense':''}" onclick="setLedgerType('expense')">支出</button>
         </div>
+        <button class="btn" onclick="exportCSV()" style="margin-left:auto">匯出 CSV</button>
       </div>
       <div id="ledgerContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
     </div>
