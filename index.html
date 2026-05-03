@@ -232,7 +232,7 @@
   /* ── BATCH INPUT ── */
   .batch-header {
     display: grid;
-    grid-template-columns: 140px 150px 1fr 120px 110px 100px 36px;
+    grid-template-columns: 130px 110px 150px 1fr 110px 100px 90px 36px;
     gap: 10px;
     padding: 0 0 8px;
     border-bottom: 1px solid var(--border);
@@ -250,7 +250,7 @@
 
   .batch-row {
     display: grid;
-    grid-template-columns: 140px 150px 1fr 120px 110px 100px 36px;
+    grid-template-columns: 130px 110px 150px 1fr 110px 100px 90px 36px;
     gap: 10px;
     align-items: center;
   }
@@ -642,8 +642,12 @@
   <div class="modal">
     <div class="modal-title">編輯記錄</div>
     <div class="form-row">
-      <label class="form-label">日期</label>
+      <label class="form-label">付款日期</label>
       <input class="form-input" type="date" id="editDate">
+    </div>
+    <div class="form-row">
+      <label class="form-label">歸屬月份（損益表用）</label>
+      <input class="form-input" type="month" id="editBelongMonth">
     </div>
     <div class="form-row">
       <label class="form-label">類別</label>
@@ -787,7 +791,7 @@ function renderEntry() {
         <button class="type-btn ${currentType==='expense'?'active expense':''}" onclick="setEntryType('expense')">支出</button>
       </div>
       <div class="batch-header">
-        <span>日期</span><span>類別</span><span>說明</span><span>金額</span><span>帳戶</span><span>備註</span><span></span>
+        <span>付款日期</span><span>歸屬月份</span><span>類別</span><span>說明</span><span>金額</span><span>帳戶</span><span>備註</span><span></span>
       </div>
       <div class="batch-rows" id="batchRows"></div>
       <div class="batch-actions">
@@ -811,6 +815,7 @@ function setEntryType(type) {
 function addBatchRow() {
   const rows = document.getElementById('batchRows');
   const today = new Date().toISOString().split('T')[0];
+  const thisMonth = today.substring(0, 7);
   const cats = categories[currentUnit][currentType] || [];
   const catOptions = cats.map(c => `<option>${c}</option>`).join('');
   const accOptions = accounts.map(a => `<option>${a.name}</option>`).join('');
@@ -818,7 +823,8 @@ function addBatchRow() {
   const row = document.createElement('div');
   row.className = 'batch-row';
   row.innerHTML = `
-    <input type="date" value="${today}">
+    <input type="date" value="${today}" oninput="syncBelongMonth(this)">
+    <input type="month" value="${thisMonth}" style="font-size:12px">
     <select>${catOptions}</select>
     <input type="text" placeholder="說明">
     <input type="number" placeholder="0" min="0">
@@ -828,11 +834,20 @@ function addBatchRow() {
   `;
   rows.appendChild(row);
 
-  // 在金額欄按 Enter 自動新增下一列
-  const amountInput = row.querySelectorAll('input')[2];
+  // 金額欄按 Enter 自動新增下一列
+  const amountInput = row.querySelectorAll('input')[3];
   amountInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { addBatchRow(); }
   });
+}
+
+// 付款日期變動時自動同步歸屬月份
+function syncBelongMonth(dateInput) {
+  const row = dateInput.parentElement;
+  const monthInput = row.querySelectorAll('input')[1];
+  if (dateInput.value) {
+    monthInput.value = dateInput.value.substring(0, 7);
+  }
 }
 
 async function submitBatch() {
@@ -841,16 +856,17 @@ async function submitBatch() {
 
   rows.forEach(row => {
     const inputs = row.querySelectorAll('input, select');
-    const date = inputs[0].value;
-    const category = inputs[1].value;
-    const description = inputs[2].value;
-    const amount = parseFloat(inputs[3].value);
-    const account = inputs[4].value;
-    const note = inputs[5].value;
+    const date        = inputs[0].value;
+    const belongMonth = inputs[1].value; // type="month"
+    const category    = inputs[2].value;
+    const description = inputs[3].value;
+    const amount      = parseFloat(inputs[4].value);
+    const account     = inputs[5].value;
+    const note        = inputs[6].value;
 
     if (!date || !category || !amount || isNaN(amount) || amount <= 0) return;
 
-    records.push({ unit: currentUnit, type: currentType, date, category, description, amount, account, note });
+    records.push({ unit: currentUnit, type: currentType, date, belongMonth, category, description, amount, account, note });
   });
 
   if (records.length === 0) { toast('沒有可儲存的資料（請檢查日期、類別、金額）', 'err'); return; }
@@ -1093,6 +1109,7 @@ async function deleteRec(id, type) {
 function openEdit(id, type, record) {
   editingRecord = { ...record, type };
   document.getElementById('editDate').value = record.date;
+  document.getElementById('editBelongMonth').value = record.belongMonth || record.date.substring(0,7);
   document.getElementById('editDesc').value = record.description || '';
   document.getElementById('editAmount').value = record.amount;
   document.getElementById('editNote').value = record.note || '';
@@ -1116,6 +1133,7 @@ async function saveEdit() {
   const updated = {
     ...editingRecord,
     date: document.getElementById('editDate').value,
+    belongMonth: document.getElementById('editBelongMonth').value,
     category: document.getElementById('editCategory').value,
     description: document.getElementById('editDesc').value,
     amount: parseFloat(document.getElementById('editAmount').value),
