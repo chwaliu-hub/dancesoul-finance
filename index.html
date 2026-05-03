@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DanceSoul 財務系統</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2a2a2a;
+    --accent-studio: #c8f542;   /* 教室 - 螢光黃綠 */
+    --accent-case: #42c8f5;     /* CASE - 電藍 */
+    --accent-bense: #f542a8;    /* 本勢 - 玫瑰粉 */
+    --accent: var(--accent-studio);
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --income-color: #4ade80;
+    --expense-color: #f87171;
+    --radius: 8px;
+    --font: 'Noto Sans TC', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .unit-tabs {
+    display: flex;
+    gap: 4px;
+  }
+
+  .unit-tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .unit-tab.active[data-unit="STUDIO"] { background: var(--accent-studio); color: #000; border-color: var(--accent-studio); }
+  .unit-tab.active[data-unit="CASE"]   { background: var(--accent-case);   color: #000; border-color: var(--accent-case); }
+  .unit-tab.active[data-unit="BENSE"]  { background: var(--accent-bense);  color: #fff; border-color: var(--accent-bense); }
+  .unit-tab:hover:not(.active) { border-color: #444; color: var(--text); }
+
+  .api-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text3);
+  }
+  .status-dot.ok  { background: var(--income-color); }
+  .status-dot.err { background: var(--expense-color); }
+
+  /* ── NAV ── */
+  .nav {
+    display: flex;
+    gap: 0;
+    padding: 0 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-btn {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 16px;
+    font-family: var(--mono);
+  }
+
+  /* ── SUMMARY CARDS ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .summary-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+
+  .summary-label {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+  }
+
+  .summary-value {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .summary-value.income  { color: var(--income-color); }
+  .summary-value.expense { color: var(--expense-color); }
+  .summary-value.net     { color: var(--accent); }
+
+  /* ── MONTH PICKER ── */
+  .month-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .month-row label { font-size: 13px; color: var(--text2); }
+
+  .month-row input[type=month] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { border-color: #555; background: #2a2a2a; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-danger { color: var(--expense-color); border-color: #3a1c1c; }
+  .btn-danger:hover { background: #2a1111; border-color: var(--expense-color); }
+
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  /* ── BATCH INPUT ── */
+  .batch-header {
+    display: grid;
+    grid-template-columns: 110px 130px 1fr 110px 100px 80px 36px;
+    gap: 6px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .batch-header span {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+  }
+
+  .batch-rows { display: flex; flex-direction: column; gap: 6px; }
+
+  .batch-row {
+    display: grid;
+    grid-template-columns: 110px 130px 1fr 110px 100px 80px 36px;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .batch-row input,
+  .batch-row select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+
+  .batch-row input:focus,
+  .batch-row select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .batch-row select option { background: #222; }
+
+  .del-row-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .del-row-btn:hover { color: var(--expense-color); border-color: #3a1c1c; background: #1a0a0a; }
+
+  .batch-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+
+  .type-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+    width: fit-content;
+  }
+
+  .type-btn {
+    padding: 8px 24px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .type-btn.active.income  { background: var(--income-color);  color: #000; }
+  .type-btn.active.expense { background: var(--expense-color); color: #000; }
+
+  /* ── TABLE ── */
+  .tbl-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    letter-spacing: 0.06em;
+    font-weight: 400;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody td {
+    padding: 10px 12px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+
+  .amount-income  { color: var(--income-color);  font-family: var(--mono); }
+  .amount-expense { color: var(--expense-color); font-family: var(--mono); }
+
+  /* ── P&L TABLE ── */
+  .pl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .pl-section-title {
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pl-section-title.income  { color: var(--income-color); }
+  .pl-section-title.expense { color: var(--expense-color); }
+
+  .pl-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #1a1a1a;
+    font-size: 13px;
+  }
+
+  .pl-row .pl-cat { color: var(--text2); }
+  .pl-row .pl-val { font-family: var(--mono); color: var(--text); }
+
+  .pl-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 0;
+    margin-top: 6px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .pl-total.income  .pl-val { color: var(--income-color); }
+  .pl-total.expense .pl-val { color: var(--expense-color); }
+
+  .pl-net-bar {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pl-net-label { font-size: 13px; color: var(--text2); font-family: var(--mono); }
+  .pl-net-value { font-family: var(--mono); font-size: 24px; font-weight: 700; }
+  .pl-net-value.pos { color: var(--income-color); }
+  .pl-net-value.neg { color: var(--expense-color); }
+
+  /* ── SETTINGS ── */
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .cat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .cat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+  }
+
+  .cat-item span { flex: 1; font-size: 13px; }
+
+  .cat-item .del-cat {
+    background: none; border: none; color: var(--text3);
+    cursor: pointer; font-size: 14px; line-height: 1;
+    padding: 2px 4px; border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .cat-item .del-cat:hover { color: var(--expense-color); }
+
+  .add-cat-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .add-cat-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: var(--font);
+  }
+
+  .add-cat-row input:focus { outline: none; border-color: var(--accent); }
+
+  /* ── ALL UNITS SUMMARY ── */
+  .all-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .unit-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .unit-card-name {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .unit-card-name[data-unit="STUDIO"] { color: var(--accent-studio); }
+  .unit-card-name[data-unit="CASE"]   { color: var(--accent-case); }
+  .unit-card-name[data-unit="BENSE"]  { color: var(--accent-bense); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 999;
+    max-width: 320px;
+  }
+
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.ok   { border-color: var(--income-color); }
+  #toast.err  { border-color: var(--expense-color); }
+
+  /* ── LOADING ── */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { text-align: center; padding: 40px; color: var(--text3); font-family: var(--mono); font-size: 13px; }
+
+  /* ── PAGINATION ── */
+  .pagination {
+    display: flex; gap: 6px; align-items: center;
+    justify-content: flex-end; margin-top: 12px;
+  }
+
+  .page-info { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+
+  /* ── EDIT MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 480px;
+    max-width: 95vw;
+    transform: translateY(12px);
+    transition: transform 0.2s;
+  }
+
+  .modal-overlay.show .modal { transform: translateY(0); }
+
+  .modal-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+
+  .form-row { margin-bottom: 12px; }
+  .form-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; display: block; font-family: var(--mono); }
+
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: var(--font);
+    font-size: 13px;
+  }
+
+  .form-input:focus { outline: none; border-color: var(--accent); }
+
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">DanceSoul · 財務系統</div>
+  <div class="unit-tabs">
+    <button class="unit-tab active" data-unit="STUDIO" onclick="switchUnit('STUDIO')">舞蹈教室</button>
+    <button class="unit-tab" data-unit="CASE" onclick="switchUnit('CASE')">CASE</button>
+    <button class="unit-tab" data-unit="BENSE" onclick="switchUnit('BENSE')">本勢娛樂</button>
+  </div>
+  <div class="api-status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">未連線</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('entry')">記帳</button>
+  <button class="nav-btn" onclick="showPage('ledger')">明細</button>
+  <button class="nav-btn" onclick="showPage('pl')">損益表</button>
+  <button class="nav-btn" onclick="showPage('all')">總覽</button>
+  <button class="nav-btn" onclick="showPage('settings')">設定</button>
+</div>
+
+<div class="main" id="main"></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">編輯記錄</div>
+    <div class="form-row">
+      <label class="form-label">日期</label>
+      <input class="form-input" type="date" id="editDate">
+    </div>
+    <div class="form-row">
+      <label class="form-label">類別</label>
+      <select class="form-input" id="editCategory"></select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">說明</label>
+      <input class="form-input" type="text" id="editDesc">
+    </div>
+    <div class="form-row">
+      <label class="form-label">金額</label>
+      <input class="form-input" type="number" id="editAmount">
+    </div>
+    <div class="form-row">
+      <label class="form-label">帳戶</label>
+      <select class="form-input" id="editAccount"></select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">備註</label>
+      <input class="form-input" type="text" id="editNote">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveEdit()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const API_URL = ''; // ← 貼上你的 Apps Script 網址
+
+const UNIT_NAMES = { STUDIO: '舞蹈教室', CASE: 'CASE（肢體/藝能）', BENSE: '本勢娛樂' };
+const UNIT_ACCENT = { STUDIO: '#c8f542', CASE: '#42c8f5', BENSE: '#f542a8' };
+
+let currentUnit = 'STUDIO';
+let currentPage = 'entry';
+let currentType = 'income'; // for entry/ledger
+let categories = { STUDIO: { income: [], expense: [] }, CASE: { income: [], expense: [] }, BENSE: { income: [], expense: [] } };
+let accounts = [];
+let currentYear, currentMonth;
+let editingRecord = null;
+let ledgerPage = 1;
+const PAGE_SIZE = 30;
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = async () => {
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth() + 1;
+
+  updateAccent();
+  showPage('entry');
+
+  if (!API_URL) {
+    setStatus('err', '請設定 API_URL');
+    return;
+  }
+  await loadAll();
+};
+
+async function loadAll() {
+  setStatus('', '連線中...');
+  try {
+    await Promise.all([loadCategories(), loadAccounts()]);
+    setStatus('ok', '已連線');
+  } catch (e) {
+    setStatus('err', '連線失敗');
+  }
+}
+
+async function loadCategories() {
+  const res = await api({ action: 'getCategories' });
+  if (res.success) categories = res.data;
+}
+
+async function loadAccounts() {
+  const res = await api({ action: 'getAccounts' });
+  if (res.success) accounts = res.data;
+}
+
+// ============================================================
+// API
+// ============================================================
+async function api(body) {
+  if (!API_URL) return { success: false, message: '未設定 API_URL' };
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// ============================================================
+// UNIT / PAGE
+// ============================================================
+function switchUnit(unit) {
+  currentUnit = unit;
+  document.querySelectorAll('.unit-tab').forEach(t => t.classList.toggle('active', t.dataset.unit === unit));
+  updateAccent();
+  renderPage();
+}
+
+function updateAccent() {
+  document.documentElement.style.setProperty('--accent', UNIT_ACCENT[currentUnit]);
+}
+
+function showPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['entry','ledger','pl','all','settings'][i] === page);
+  });
+  renderPage();
+}
+
+function renderPage() {
+  switch (currentPage) {
+    case 'entry':    renderEntry(); break;
+    case 'ledger':   renderLedger(); break;
+    case 'pl':       renderPL(); break;
+    case 'all':      renderAll(); break;
+    case 'settings': renderSettings(); break;
+  }
+}
+
+// ============================================================
+// ENTRY PAGE (批次記帳)
+// ============================================================
+function renderEntry() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">${UNIT_NAMES[currentUnit]} · 批次記帳</div>
+      <div class="type-toggle">
+        <button class="type-btn ${currentType==='income'?'active income':''}" onclick="setEntryType('income')">收入</button>
+        <button class="type-btn ${currentType==='expense'?'active expense':''}" onclick="setEntryType('expense')">支出</button>
+      </div>
+      <div class="batch-header">
+        <span>日期</span><span>類別</span><span>說明</span><span>金額</span><span>帳戶</span><span>備註</span><span></span>
+      </div>
+      <div class="batch-rows" id="batchRows"></div>
+      <div class="batch-actions">
+        <button class="btn" onclick="addBatchRow()">＋ 新增一列</button>
+        <button class="btn btn-primary" onclick="submitBatch()">批次儲存</button>
+        <span id="batchMsg" style="font-size:12px;color:var(--text2);margin-left:8px;"></span>
+      </div>
+    </div>
+  `;
+
+  // 預設3列
+  for (let i = 0; i < 3; i++) addBatchRow();
+}
+
+function setEntryType(type) {
+  currentType = type;
+  renderEntry();
+}
+
+function addBatchRow() {
+  const rows = document.getElementById('batchRows');
+  const today = new Date().toISOString().split('T')[0];
+  const cats = categories[currentUnit][currentType] || [];
+  const catOptions = cats.map(c => `<option>${c}</option>`).join('');
+  const accOptions = accounts.map(a => `<option>${a.name}</option>`).join('');
+
+  const row = document.createElement('div');
+  row.className = 'batch-row';
+  row.innerHTML = `
+    <input type="date" value="${today}">
+    <select>${catOptions}</select>
+    <input type="text" placeholder="說明">
+    <input type="number" placeholder="0" min="0">
+    <select>${accOptions}</select>
+    <input type="text" placeholder="備註">
+    <button class="del-row-btn" onclick="this.parentElement.remove()">×</button>
+  `;
+  rows.appendChild(row);
+
+  // 在金額欄按 Enter 自動新增下一列
+  const amountInput = row.querySelectorAll('input')[2];
+  amountInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { addBatchRow(); }
+  });
+}
+
+async function submitBatch() {
+  const rows = document.querySelectorAll('#batchRows .batch-row');
+  const records = [];
+
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input, select');
+    const date = inputs[0].value;
+    const category = inputs[1].value;
+    const description = inputs[2].value;
+    const amount = parseFloat(inputs[3].value);
+    const account = inputs[4].value;
+    const note = inputs[5].value;
+
+    if (!date || !category || !amount || isNaN(amount) || amount <= 0) return;
+
+    records.push({ unit: currentUnit, type: currentType, date, category, description, amount, account, note });
+  });
+
+  if (records.length === 0) { toast('沒有可儲存的資料（請檢查日期、類別、金額）', 'err'); return; }
+
+  document.getElementById('batchMsg').textContent = '儲存中...';
+
+  try {
+    const res = await api({ action: 'addRecords', records });
+    if (res.success) {
+      toast(`已儲存 ${res.ids.length} 筆`, 'ok');
+      document.getElementById('batchMsg').textContent = '';
+      renderEntry();
+    } else {
+      toast(res.message, 'err');
+      document.getElementById('batchMsg').textContent = '';
+    }
+  } catch (e) {
+    toast('儲存失敗：' + e.message, 'err');
+    document.getElementById('batchMsg').textContent = '';
+  }
+}
+
+// ============================================================
+// LEDGER PAGE
+// ============================================================
+async function renderLedger() {
+  const main = document.getElementById('main');
+  const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">${UNIT_NAMES[currentUnit]} · 明細</div>
+      <div class="month-row">
+        <label>月份</label>
+        <input type="month" value="${ym}" id="ledgerMonth" onchange="updateLedgerMonth(this.value)">
+        <div class="type-toggle" style="margin-bottom:0">
+          <button class="type-btn ${currentType==='income'?'active income':''}" onclick="setLedgerType('income')">收入</button>
+          <button class="type-btn ${currentType==='expense'?'active expense':''}" onclick="setLedgerType('expense')">支出</button>
+        </div>
+      </div>
+      <div id="ledgerContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+    </div>
+  `;
+
+  await loadLedger();
+}
+
+function updateLedgerMonth(val) {
+  const [y, m] = val.split('-');
+  currentYear = parseInt(y);
+  currentMonth = parseInt(m);
+  ledgerPage = 1;
+  loadLedger();
+}
+
+function setLedgerType(type) {
+  currentType = type;
+  ledgerPage = 1;
+  renderLedger();
+}
+
+async function loadLedger() {
+  const content = document.getElementById('ledgerContent');
+  if (!content) return;
+
+  try {
+    const res = await api({ action: 'getRecords', unit: currentUnit, type: currentType, year: currentYear, month: currentMonth });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+
+    const records = res.data;
+    if (records.length === 0) { content.innerHTML = '<div class="empty">這個月份沒有資料</div>'; return; }
+
+    const totalPages = Math.ceil(records.length / PAGE_SIZE);
+    const pageRecords = records.slice((ledgerPage - 1) * PAGE_SIZE, ledgerPage * PAGE_SIZE);
+    const totalAmount = records.reduce((s, r) => s + Number(r.amount), 0);
+
+    const typeClass = currentType === 'income' ? 'amount-income' : 'amount-expense';
+
+    content.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text2)">共 <b style="color:var(--text)">${records.length}</b> 筆</div>
+        <div style="font-family:var(--mono);font-size:14px" class="${typeClass}">合計：${fmt(totalAmount)}</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>日期</th><th>類別</th><th>說明</th><th>帳戶</th><th style="text-align:right">金額</th><th>備註</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${pageRecords.map(r => `
+              <tr>
+                <td style="font-family:var(--mono);white-space:nowrap">${r.date}</td>
+                <td><span class="tag">${r.category}</span></td>
+                <td>${r.description || ''}</td>
+                <td style="color:var(--text2)">${r.account || ''}</td>
+                <td class="${typeClass}" style="text-align:right;font-family:var(--mono)">${fmt(r.amount)}</td>
+                <td style="color:var(--text2)">${r.note || ''}</td>
+                <td style="white-space:nowrap">
+                  <button class="btn btn-sm" onclick="openEdit('${r.id}','${currentType}',${JSON.stringify(r).replace(/"/g,'&quot;')})">編輯</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteRec('${r.id}','${currentType}')">刪除</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${totalPages > 1 ? `
+        <div class="pagination">
+          <button class="btn btn-sm" onclick="ledgerPage--; loadLedger()" ${ledgerPage===1?'disabled':''}>上一頁</button>
+          <span class="page-info">${ledgerPage} / ${totalPages}</span>
+          <button class="btn btn-sm" onclick="ledgerPage++; loadLedger()" ${ledgerPage===totalPages?'disabled':''}>下一頁</button>
+        </div>
+      ` : ''}
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+async function deleteRec(id, type) {
+  if (!confirm('確定刪除這筆記錄？')) return;
+  const res = await api({ action: 'deleteRecord', unit: currentUnit, type, id });
+  if (res.success) { toast('已刪除', 'ok'); loadLedger(); }
+  else toast(res.message, 'err');
+}
+
+// ============================================================
+// EDIT MODAL
+// ============================================================
+function openEdit(id, type, record) {
+  editingRecord = { ...record, type };
+  document.getElementById('editDate').value = record.date;
+  document.getElementById('editDesc').value = record.description || '';
+  document.getElementById('editAmount').value = record.amount;
+  document.getElementById('editNote').value = record.note || '';
+
+  const catSel = document.getElementById('editCategory');
+  const cats = categories[currentUnit][type] || [];
+  catSel.innerHTML = cats.map(c => `<option ${c===record.category?'selected':''}>${c}</option>`).join('');
+
+  const accSel = document.getElementById('editAccount');
+  accSel.innerHTML = accounts.map(a => `<option ${a.name===record.account?'selected':''}>${a.name}</option>`).join('');
+
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('show');
+  editingRecord = null;
+}
+
+async function saveEdit() {
+  const updated = {
+    ...editingRecord,
+    date: document.getElementById('editDate').value,
+    category: document.getElementById('editCategory').value,
+    description: document.getElementById('editDesc').value,
+    amount: parseFloat(document.getElementById('editAmount').value),
+    account: document.getElementById('editAccount').value,
+    note: document.getElementById('editNote').value,
+    unit: currentUnit
+  };
+  const res = await api({ action: 'updateRecord', record: updated });
+  if (res.success) { toast('已更新', 'ok'); closeModal(); loadLedger(); }
+  else toast(res.message, 'err');
+}
+
+// ============================================================
+// P&L PAGE
+// ============================================================
+async function renderPL() {
+  const main = document.getElementById('main');
+  const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">${UNIT_NAMES[currentUnit]} · 損益表</div>
+      <div class="month-row">
+        <label>月份</label>
+        <input type="month" value="${ym}" id="plMonth" onchange="updatePLMonth(this.value)">
+        <button class="btn" onclick="loadPL()">重新整理</button>
+      </div>
+      <div id="plContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+    </div>
+  `;
+  await loadPL();
+}
+
+function updatePLMonth(val) {
+  const [y, m] = val.split('-');
+  currentYear = parseInt(y);
+  currentMonth = parseInt(m);
+  loadPL();
+}
+
+async function loadPL() {
+  const content = document.getElementById('plContent');
+  if (!content) return;
+  try {
+    const res = await api({ action: 'getSummary', unit: currentUnit, year: currentYear, month: currentMonth });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const d = res.data;
+
+    const incomeRows = Object.entries(d.incomeByCategory).map(([cat, val]) =>
+      `<div class="pl-row"><span class="pl-cat">${cat}</span><span class="pl-val">${fmt(val)}</span></div>`
+    ).join('') || '<div class="pl-row" style="color:var(--text3)"><span>無資料</span></div>';
+
+    const expenseRows = Object.entries(d.expenseByCategory).map(([cat, val]) =>
+      `<div class="pl-row"><span class="pl-cat">${cat}</span><span class="pl-val">${fmt(val)}</span></div>`
+    ).join('') || '<div class="pl-row" style="color:var(--text3)"><span>無資料</span></div>';
+
+    const netClass = d.netProfit >= 0 ? 'pos' : 'neg';
+
+    content.innerHTML = `
+      <div class="pl-grid">
+        <div>
+          <div class="pl-section-title income">收 入</div>
+          ${incomeRows}
+          <div class="pl-total income"><span>合計</span><span class="pl-val">${fmt(d.totalIncome)}</span></div>
+        </div>
+        <div>
+          <div class="pl-section-title expense">支 出</div>
+          ${expenseRows}
+          <div class="pl-total expense"><span>合計</span><span class="pl-val">${fmt(d.totalExpense)}</span></div>
+        </div>
+      </div>
+      <div class="pl-net-bar">
+        <div class="pl-net-label">${currentYear}年${currentMonth}月 · 淨損益</div>
+        <div class="pl-net-value ${netClass}">${d.netProfit >= 0 ? '+' : ''}${fmt(d.netProfit)}</div>
+      </div>
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+// ============================================================
+// ALL UNITS SUMMARY
+// ============================================================
+async function renderAll() {
+  const main = document.getElementById('main');
+  const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">三單位總覽</div>
+      <div class="month-row">
+        <label>月份</label>
+        <input type="month" value="${ym}" id="allMonth" onchange="updateAllMonth(this.value)">
+        <button class="btn" onclick="loadAll2()">重新整理</button>
+      </div>
+      <div id="allContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+    </div>
+  `;
+  await loadAll2();
+}
+
+function updateAllMonth(val) {
+  const [y, m] = val.split('-');
+  currentYear = parseInt(y);
+  currentMonth = parseInt(m);
+  loadAll2();
+}
+
+async function loadAll2() {
+  const content = document.getElementById('allContent');
+  if (!content) return;
+  try {
+    const res = await api({ action: 'getAllSummary', year: currentYear, month: currentMonth });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const d = res.data;
+
+    const unitCards = ['STUDIO','CASE','BENSE'].map(u => {
+      const s = d.summaries[u];
+      const netClass = s.netProfit >= 0 ? 'pos' : 'neg';
+      return `
+        <div class="unit-card">
+          <div class="unit-card-name" data-unit="${u}">${UNIT_NAMES[u]}</div>
+          <div class="pl-row"><span class="pl-cat">收入</span><span style="font-family:var(--mono);color:var(--income-color)">${fmt(s.totalIncome)}</span></div>
+          <div class="pl-row"><span class="pl-cat">支出</span><span style="font-family:var(--mono);color:var(--expense-color)">${fmt(s.totalExpense)}</span></div>
+          <div class="pl-total ${netClass}" style="margin-top:8px">
+            <span>淨損益</span>
+            <span class="pl-val" style="color:${s.netProfit>=0?'var(--income-color)':'var(--expense-color)'}">${s.netProfit>=0?'+':''}${fmt(s.netProfit)}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const grandNetClass = d.grandNet >= 0 ? 'pos' : 'neg';
+
+    content.innerHTML = `
+      <div class="all-summary-grid">${unitCards}</div>
+      <div class="pl-net-bar" style="margin-top:0">
+        <div>
+          <div class="pl-net-label">三單位合計 ${currentYear}年${currentMonth}月</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px;font-family:var(--mono)">
+            收入 ${fmt(d.grandIncome)} ／ 支出 ${fmt(d.grandExpense)}
+          </div>
+        </div>
+        <div class="pl-net-value ${grandNetClass}">${d.grandNet>=0?'+':''}${fmt(d.grandNet)}</div>
+      </div>
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+// ============================================================
+// SETTINGS PAGE
+// ============================================================
+function renderSettings() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="settings-grid">
+      ${renderCatSection('income', '收入類別')}
+      ${renderCatSection('expense', '支出類別')}
+    </div>
+    <div class="card" style="margin-top:0" id="accountsCard">
+      <div class="card-title">帳戶管理</div>
+      <div id="accountsList"></div>
+      <div class="add-cat-row" style="margin-top:8px">
+        <input type="text" id="newAccountName" placeholder="新帳戶名稱">
+        <input type="number" id="newAccountBal" placeholder="初始餘額" style="width:140px">
+        <button class="btn" onclick="addAccount()">新增</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <div class="card-title">API 設定</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">目前 API_URL：<span style="font-family:var(--mono);color:var(--text)">${API_URL || '(未設定)'}</span></div>
+      <div style="font-size:12px;color:var(--text2)">若要修改，請直接編輯 HTML 檔案中的 <span style="font-family:var(--mono)">API_URL</span> 變數。</div>
+    </div>
+  `;
+  renderAccountsList();
+}
+
+function renderCatSection(type, title) {
+  const cats = categories[currentUnit][type] || [];
+  const typeLabel = type === 'income' ? 'income' : 'expense';
+  return `
+    <div class="card">
+      <div class="card-title">${UNIT_NAMES[currentUnit]} · ${title}</div>
+      <div class="cat-list" id="catList-${type}">
+        ${cats.map((c, i) => `
+          <div class="cat-item" data-type="${type}" data-index="${i}">
+            <span>${c}</span>
+            <button class="del-cat" onclick="deleteCat('${type}',${i})">×</button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="add-cat-row">
+        <input type="text" id="newCat-${type}" placeholder="新增類別名稱" onkeydown="if(event.key==='Enter')addCat('${type}')">
+        <button class="btn" onclick="addCat('${type}')">新增</button>
+        <button class="btn btn-primary" onclick="saveCats('${type}')">儲存</button>
+      </div>
+    </div>
+  `;
+}
+
+function addCat(type) {
+  const input = document.getElementById(`newCat-${type}`);
+  const name = input.value.trim();
+  if (!name) return;
+  if (!categories[currentUnit][type]) categories[currentUnit][type] = [];
+  categories[currentUnit][type].push(name);
+  input.value = '';
+  renderSettings();
+}
+
+function deleteCat(type, index) {
+  categories[currentUnit][type].splice(index, 1);
+  renderSettings();
+}
+
+async function saveCats(type) {
+  const cats = categories[currentUnit][type] || [];
+  const res = await api({ action: 'saveCategories', unit: currentUnit, type, categories: cats });
+  if (res.success) toast('分類已儲存', 'ok');
+  else toast(res.message, 'err');
+}
+
+function renderAccountsList() {
+  const list = document.getElementById('accountsList');
+  if (!list) return;
+  list.innerHTML = accounts.map((a, i) => `
+    <div class="cat-item">
+      <span>${a.name}</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text2)">${fmt(a.balance)}</span>
+      <button class="del-cat" onclick="deleteAccount(${i})">×</button>
+    </div>
+  `).join('') || '<div style="color:var(--text3);font-size:13px;padding:8px 0">尚無帳戶</div>';
+}
+
+function addAccount() {
+  const name = document.getElementById('newAccountName').value.trim();
+  const bal = parseFloat(document.getElementById('newAccountBal').value) || 0;
+  if (!name) return;
+  accounts.push({ name, balance: bal, note: '' });
+  document.getElementById('newAccountName').value = '';
+  document.getElementById('newAccountBal').value = '';
+  renderAccountsList();
+}
+
+function deleteAccount(i) {
+  accounts.splice(i, 1);
+  renderAccountsList();
+}
+
+async function saveAccountsToSheet() {
+  const res = await api({ action: 'saveAccounts', accounts });
+  if (res.success) toast('帳戶已儲存', 'ok');
+  else toast(res.message, 'err');
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function fmt(n) {
+  return Number(n).toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function setStatus(type, text) {
+  document.getElementById('statusDot').className = 'status-dot ' + type;
+  document.getElementById('statusText').textContent = text;
+}
+</script>
+</body>
+</html>
