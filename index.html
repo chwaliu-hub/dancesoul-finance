@@ -648,7 +648,8 @@
 
 <!-- NAV -->
 <div class="nav">
-  <button class="nav-btn active" onclick="showPage('entry')">記帳</button>
+  <button class="nav-btn active" onclick="showPage('home')">首頁</button>
+  <button class="nav-btn" onclick="showPage('entry')">記帳</button>
   <button class="nav-btn" onclick="showPage('ledger')">明細</button>
   <button class="nav-btn" onclick="showPage('pl')">損益表</button>
   <button class="nav-btn" onclick="showPage('yearly')">年度報表</button>
@@ -733,7 +734,7 @@ window.onload = async () => {
   currentMonth = now.getMonth() + 1;
 
   updateAccent();
-  showPage('entry');
+  showPage('home');
 
   if (!API_URL) {
     setStatus('err', '請設定 API_URL');
@@ -791,13 +792,14 @@ function updateAccent() {
 function showPage(page) {
   currentPage = page;
   document.querySelectorAll('.nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['entry','ledger','pl','yearly','trend','requisition','receivables','hr','all','accounts','settings'][i] === page);
+    b.classList.toggle('active', ['home','entry','ledger','pl','yearly','trend','requisition','receivables','hr','all','accounts','settings'][i] === page);
   });
   renderPage();
 }
 
 function renderPage() {
   switch (currentPage) {
+    case 'home':        renderHome(); break;
     case 'entry':       renderEntry(); break;
     case 'ledger':      renderLedger(); break;
     case 'pl':          renderPL(); break;
@@ -1424,6 +1426,233 @@ async function saveAccountsToSheet() {
   const res = await api({ action: 'saveAccounts', accounts });
   if (res.success) toast('帳戶已儲存', 'ok');
   else toast(res.message, 'err');
+}
+
+// ============================================================
+// 首頁儀表板
+// ============================================================
+async function renderHome() {
+  const main = document.getElementById('main');
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const mLabel = `${y}年${m}月`;
+
+  main.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- 左欄：本月損益 + 提醒 -->
+      <div>
+        <div class="card">
+          <div class="card-title">${mLabel} · 三單位損益</div>
+          <div id="homeSummary"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <div class="card-title">提醒</div>
+          <div id="homeAlerts"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+        </div>
+      </div>
+
+      <!-- 右欄：待辦事項 -->
+      <div>
+        <div class="card">
+          <div class="card-title">待辦事項</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <input type="text" id="todoInput" placeholder="新增待辦..."
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-family:var(--font);font-size:13px"
+              onkeydown="if(event.key==='Enter')addTodoItem()">
+            <select id="todoPriority" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;font-size:12px">
+              <option>一般</option>
+              <option>重要</option>
+              <option>緊急</option>
+            </select>
+            <button class="btn btn-primary" onclick="addTodoItem()">新增</button>
+          </div>
+          <div id="todoList"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  // 並行載入
+  await Promise.all([loadHomeSummary(y, m), loadHomeAlerts(), loadTodos()]);
+}
+
+async function loadHomeSummary(y, m) {
+  const content = document.getElementById('homeSummary');
+  if (!content) return;
+  try {
+    const res = await api({ action: 'getAllSummary', year: y, month: m });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const d = res.data;
+
+    content.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${['STUDIO','CASE','BENSE'].map(u => {
+          const s = d.summaries[u];
+          const netClass = s.netProfit >= 0 ? 'income' : 'expense';
+          const unitColor = UNIT_ACCENT[u];
+          return `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
+              <div style="font-size:12px;color:${unitColor};font-family:var(--mono);width:80px;white-space:nowrap">${UNIT_NAMES[u]}</div>
+              <div style="flex:1;display:flex;gap:16px;font-size:12px;font-family:var(--mono)">
+                <span style="color:var(--income-color)">↑ ${fmt(s.totalIncome)}</span>
+                <span style="color:var(--expense-color)">↓ ${fmt(s.totalExpense)}</span>
+              </div>
+              <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--${netClass}-color)">${s.netProfit>=0?'+':''}${fmt(s.netProfit)}</div>
+            </div>
+          `;
+        }).join('')}
+        <div style="display:flex;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--border);margin-top:4px">
+          <span style="font-size:12px;color:var(--text2)">三單位合計淨損益</span>
+          <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:${d.grandNet>=0?'var(--income-color)':'var(--expense-color)'}">${d.grandNet>=0?'+':''}${fmt(d.grandNet)}</span>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗</div>`;
+  }
+}
+
+async function loadHomeAlerts() {
+  const content = document.getElementById('homeAlerts');
+  if (!content) return;
+  try {
+    const [reqRes, recRes] = await Promise.all([
+      api({ action: 'getRequisitions', unit: '', status: '待核准' }),
+      api({ action: 'getReceivables', unit: '' })
+    ]);
+
+    const alerts = [];
+
+    // 待核准請款單
+    if (reqRes.success && reqRes.data.length > 0) {
+      const total = reqRes.data.reduce((s,r) => s + (r.items||[]).reduce((ss,i)=>ss+Number(i.amount),0), 0);
+      alerts.push({ icon: '📋', text: `待核准請款單 ${reqRes.data.length} 筆`, sub: `合計 NT$ ${fmt(total)}`, color: 'var(--accent)', action: `showPage('requisition')` });
+    }
+
+    // 逾期應收款
+    if (recRes.success) {
+      const overdue = recRes.data.filter(r => r.rtype==='應收' && r.dueDate && new Date(r.dueDate) < new Date() && !['已收','已付'].includes(r.status));
+      if (overdue.length > 0) {
+        const total = overdue.reduce((s,r)=>s+Number(r.amount),0);
+        alerts.push({ icon: '⚠️', text: `逾期應收款 ${overdue.length} 筆`, sub: `合計 NT$ ${fmt(total)}`, color: 'var(--expense-color)', action: `showPage('receivables')` });
+      }
+
+      // 即將到期應付款（7天內）
+      const soon = recRes.data.filter(r => {
+        if (r.rtype !== '應付' || ['已收','已付'].includes(r.status)) return false;
+        const due = new Date(r.dueDate);
+        const diff = (due - new Date()) / (1000*60*60*24);
+        return diff >= 0 && diff <= 7;
+      });
+      if (soon.length > 0) {
+        alerts.push({ icon: '🔔', text: `7天內到期應付款 ${soon.length} 筆`, sub: '', color: 'var(--accent-case)', action: `showPage('receivables')` });
+      }
+    }
+
+    if (alerts.length === 0) {
+      content.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:4px 0">目前沒有待處理事項 ✓</div>';
+      return;
+    }
+
+    content.innerHTML = alerts.map(a => `
+      <div onclick="${a.action}" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:border-color 0.15s"
+        onmouseover="this.style.borderColor='${a.color}'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:18px">${a.icon}</span>
+        <div style="flex:1">
+          <div style="font-size:13px;color:${a.color};font-weight:500">${a.text}</div>
+          ${a.sub ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${a.sub}</div>` : ''}
+        </div>
+        <span style="color:var(--text3);font-size:12px">→</span>
+      </div>
+    `).join('');
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗</div>`;
+  }
+}
+
+// ============================================================
+// 待辦事項
+// ============================================================
+let todos = [];
+
+async function loadTodos() {
+  const content = document.getElementById('todoList');
+  if (!content) return;
+  try {
+    const res = await api({ action: 'getTodos' });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    todos = res.data;
+    renderTodoList();
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗</div>`;
+  }
+}
+
+function renderTodoList() {
+  const content = document.getElementById('todoList');
+  if (!content) return;
+
+  const pending = todos.filter(t => !t.done);
+  const done = todos.filter(t => t.done);
+
+  const priorityColor = { '緊急': 'var(--expense-color)', '重要': 'var(--accent)', '一般': 'var(--text3)' };
+  const priorityBadge = p => `<span style="font-size:10px;font-family:var(--mono);color:${priorityColor[p]||'var(--text3)'};border:1px solid ${priorityColor[p]||'var(--border)'};padding:1px 6px;border-radius:4px">${p}</span>`;
+
+  const renderItem = t => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:6px;opacity:${t.done?0.45:1}">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo('${t.id}',this.checked)"
+        style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
+      <div style="flex:1">
+        <div style="font-size:13px;${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.text}</div>
+        <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+          ${priorityBadge(t.priority)}
+          <span style="font-size:10px;color:var(--text3)">${t.createdAt}</span>
+        </div>
+      </div>
+      <button onclick="deleteTodoItem('${t.id}')" class="del-row-btn" style="flex-shrink:0">×</button>
+    </div>
+  `;
+
+  content.innerHTML = `
+    ${pending.length === 0 ? '<div style="color:var(--text3);font-size:13px;padding:8px 0;text-align:center">所有待辦都完成了 ✓</div>' : pending.map(renderItem).join('')}
+    ${done.length > 0 ? `
+      <div style="font-size:11px;color:var(--text3);margin:12px 0 8px;font-family:var(--mono);letter-spacing:0.06em">已完成（${done.length}）</div>
+      ${done.map(renderItem).join('')}
+    ` : ''}
+  `;
+}
+
+async function addTodoItem() {
+  const input = document.getElementById('todoInput');
+  const priority = document.getElementById('todoPriority').value;
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  const res = await api({ action: 'addTodo', todo: { text, priority } });
+  if (res.success) {
+    todos.unshift({ id: res.id, text, priority, done: false, createdAt: new Date().toISOString().split('T')[0] });
+    renderTodoList();
+  } else toast(res.message, 'err');
+}
+
+async function toggleTodo(id, done) {
+  const todo = todos.find(t => t.id === id);
+  if (!todo) return;
+  todo.done = done;
+  renderTodoList();
+  const res = await api({ action: 'updateTodo', todo: { ...todo, done } });
+  if (!res.success) { todo.done = !done; renderTodoList(); toast(res.message, 'err'); }
+}
+
+async function deleteTodoItem(id) {
+  todos = todos.filter(t => t.id !== id);
+  renderTodoList();
+  const res = await api({ action: 'deleteTodo', id });
+  if (!res.success) { toast(res.message, 'err'); loadTodos(); }
 }
 
 // ============================================================
