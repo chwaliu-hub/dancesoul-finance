@@ -2026,10 +2026,6 @@ async function renderRequisition() {
           </div>
         </div>
         <div class="form-row">
-          <label class="form-label">請款說明</label>
-          <input class="form-input" type="text" id="reqDesc" placeholder="例：5月演出費用請款">
-        </div>
-        <div class="form-row">
           <label class="form-label">付款帳戶</label>
           <select class="form-input" id="reqAccount"></select>
         </div>
@@ -2225,13 +2221,13 @@ async function saveRequisition() {
     belongMonth: document.getElementById('reqBelongMonth').value,
     unit: document.getElementById('reqUnit').value,
     applicant: document.getElementById('reqApplicant').value,
-    description: document.getElementById('reqDesc').value,
+    description: '',
     items: reqItems,
     attachment: document.getElementById('reqAttachment').value,
     account: document.getElementById('reqAccount').value
   };
 
-  if (!req.date || !req.applicant || !req.description) { toast('日期、請款人、說明為必填', 'err'); return; }
+  if (!req.date || !req.applicant) { toast('日期、請款人為必填', 'err'); return; }
   if (reqItems.length === 0) { toast('請新增至少一筆費用明細', 'err'); return; }
 
   const action = editingReq ? 'updateRequisition' : 'addRequisition';
@@ -2306,10 +2302,6 @@ async function printReq(id) {
           <td style="padding:8px 12px;border:1px solid #ccc">${unitName}</td>
           <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">請款人</td>
           <td style="padding:8px 12px;border:1px solid #ccc">${req.applicant}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">說明</td>
-          <td colspan="3" style="padding:8px 12px;border:1px solid #ccc">${req.description}</td>
         </tr>
         <tr>
           <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">歸屬月份</td>
