@@ -531,7 +531,31 @@
   #toast.ok   { border-color: var(--income-color); }
   #toast.err  { border-color: var(--expense-color); }
 
-  /* ── LOADING ── */
+  /* ── 列印樣式 ── */
+  @media print {
+    body { background: #fff; color: #000; }
+    .topbar, .nav, #toast, .modal-overlay { display: none !important; }
+    .main { padding: 0; max-width: 100%; }
+    .card { border: none; box-shadow: none; padding: 0; }
+    .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    #printArea {
+      font-family: 'Noto Sans TC', sans-serif;
+      color: #000;
+      padding: 24px;
+    }
+  }
+
+  .print-only { display: none; }
+
+  #printArea table { width: 100%; border-collapse: collapse; }
+  #printArea th, #printArea td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  #printArea th { background: #f5f5f5; font-weight: 600; }
+
   .loading {
     display: flex; align-items: center; justify-content: center;
     padding: 40px;
@@ -629,6 +653,7 @@
   <button class="nav-btn" onclick="showPage('pl')">損益表</button>
   <button class="nav-btn" onclick="showPage('yearly')">年度報表</button>
   <button class="nav-btn" onclick="showPage('trend')">趨勢圖</button>
+  <button class="nav-btn" onclick="showPage('requisition')">請款單</button>
   <button class="nav-btn" onclick="showPage('receivables')">應收應付</button>
   <button class="nav-btn" onclick="showPage('hr')">HR</button>
   <button class="nav-btn" onclick="showPage('all')">總覽</button>
@@ -766,7 +791,7 @@ function updateAccent() {
 function showPage(page) {
   currentPage = page;
   document.querySelectorAll('.nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['entry','ledger','pl','yearly','trend','receivables','hr','all','accounts','settings'][i] === page);
+    b.classList.toggle('active', ['entry','ledger','pl','yearly','trend','requisition','receivables','hr','all','accounts','settings'][i] === page);
   });
   renderPage();
 }
@@ -778,6 +803,7 @@ function renderPage() {
     case 'pl':          renderPL(); break;
     case 'yearly':      renderYearly(); break;
     case 'trend':       renderTrend(); break;
+    case 'requisition': renderRequisition(); break;
     case 'receivables': renderReceivables(); break;
     case 'hr':          renderHR(); break;
     case 'all':         renderAll(); break;
@@ -1947,6 +1973,389 @@ async function deleteEmp(id) {
   if (res.success) { toast('已刪除', 'ok'); loadHR(); }
   else toast(res.message, 'err');
 }
+
+// ============================================================
+// 請款單
+// ============================================================
+let editingReq = null;
+let reqItems = [];
+
+async function renderRequisition() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div id="printArea" class="print-only"></div>
+    <div class="no-print">
+      <div class="card">
+        <div class="card-title">請款單</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary" onclick="openReqModal()">＋ 新增請款單</button>
+          <div class="type-toggle" style="margin-bottom:0">
+            <button class="type-btn active income" id="rqtab-all"    onclick="loadRequisitions('')">全部</button>
+            <button class="type-btn" id="rqtab-pending" onclick="loadRequisitions('待核准')">待核准</button>
+            <button class="type-btn" id="rqtab-paid"    onclick="loadRequisitions('已付款')">已付款</button>
+          </div>
+        </div>
+        <div id="reqContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+      </div>
+    </div>
+
+    <!-- 請款單 Modal -->
+    <div class="modal-overlay" id="reqModal" style="overflow-y:auto">
+      <div class="modal" style="width:600px;max-height:90vh;overflow-y:auto">
+        <div class="modal-title" id="reqModalTitle">新增請款單</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-row">
+            <label class="form-label">日期</label>
+            <input class="form-input" type="date" id="reqDate">
+          </div>
+          <div class="form-row">
+            <label class="form-label">歸屬月份</label>
+            <input class="form-input" type="month" id="reqBelongMonth">
+          </div>
+          <div class="form-row">
+            <label class="form-label">所屬單位</label>
+            <select class="form-input" id="reqUnit">
+              <option value="STUDIO">舞蹈教室</option>
+              <option value="CASE">CASE</option>
+              <option value="BENSE">本勢娛樂</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">請款人</label>
+            <input class="form-input" type="text" id="reqApplicant">
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">請款說明</label>
+          <input class="form-input" type="text" id="reqDesc" placeholder="例：5月演出費用請款">
+        </div>
+        <div class="form-row">
+          <label class="form-label">付款帳戶</label>
+          <select class="form-input" id="reqAccount"></select>
+        </div>
+
+        <!-- 費用明細 -->
+        <div style="margin:16px 0 8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:11px;color:var(--text2);font-family:var(--mono);letter-spacing:0.08em">費用明細</span>
+            <button class="btn btn-sm" onclick="addReqItem()">＋ 新增項目</button>
+          </div>
+          <div style="display:grid;grid-template-columns:150px 1fr 100px 32px;gap:6px;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">科目</span>
+            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">說明</span>
+            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">金額</span>
+            <span></span>
+          </div>
+          <div id="reqItems"></div>
+          <div style="text-align:right;margin-top:8px;font-family:var(--mono);font-size:14px;color:var(--accent)">
+            合計：<span id="reqTotal">0</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">附件說明</label>
+          <input class="form-input" type="text" id="reqAttachment" placeholder="例：收據3張、發票1張">
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeReqModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveRequisition()">儲存請款單</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 核准付款 Modal -->
+    <div class="modal-overlay" id="approveModal">
+      <div class="modal" style="width:380px">
+        <div class="modal-title">確認核准付款</div>
+        <div class="form-row">
+          <label class="form-label">實際付款日</label>
+          <input class="form-input" type="date" id="approveDate">
+        </div>
+        <div class="form-row">
+          <label class="form-label">付款帳戶</label>
+          <select class="form-input" id="approveAccount"></select>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin:12px 0;padding:10px;background:var(--surface2);border-radius:var(--radius)">
+          核准後將自動寫入支出明細，此操作無法復原。
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeApproveModal()">取消</button>
+          <button class="btn btn-primary" onclick="confirmApprove()">確認核准付款</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadRequisitions('');
+}
+
+let currentReqFilter = '';
+let approvingReqId = null;
+
+async function loadRequisitions(status) {
+  currentReqFilter = status;
+  ['all','pending','paid'].forEach(k => {
+    const el = document.getElementById(`rqtab-${k}`);
+    if (!el) return;
+    el.classList.remove('active','income','expense');
+  });
+  const tabMap = {'':'all','待核准':'pending','已付款':'paid'};
+  const activeTab = document.getElementById(`rqtab-${tabMap[status]}`);
+  if (activeTab) { activeTab.classList.add('active','income'); }
+
+  const content = document.getElementById('reqContent');
+  if (!content) return;
+  content.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
+
+  try {
+    const res = await api({ action: 'getRequisitions', unit: '', status });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const reqs = res.data;
+    if (reqs.length === 0) { content.innerHTML = '<div class="empty">沒有請款單</div>'; return; }
+
+    content.innerHTML = `
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>單號</th><th>日期</th><th>單位</th><th>請款人</th><th>說明</th>
+            <th style="text-align:right">金額</th><th>狀態</th><th>付款日</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${reqs.map(r => {
+              const total = (r.items||[]).reduce((s,i)=>s+Number(i.amount),0);
+              const statusColor = r.status==='已付款'?'var(--text3)':r.status==='待核准'?'var(--accent)':'var(--text2)';
+              const unitName = UNIT_NAMES[r.unit]||r.unit;
+              const unitColor = UNIT_ACCENT[r.unit]||'var(--text)';
+              return `<tr>
+                <td style="font-family:var(--mono);font-size:12px">${r.id}</td>
+                <td style="font-family:var(--mono);font-size:12px">${r.date}</td>
+                <td><span style="font-size:11px;color:${unitColor}">${unitName}</span></td>
+                <td>${r.applicant}</td>
+                <td style="color:var(--text2)">${r.description}</td>
+                <td style="text-align:right;font-family:var(--mono);color:var(--expense-color)">${fmt(total)}</td>
+                <td><span style="font-size:12px;color:${statusColor};font-weight:500">${r.status}</span></td>
+                <td style="font-family:var(--mono);font-size:12px;color:var(--text3)">${r.payDate||'—'}</td>
+                <td style="white-space:nowrap;display:flex;gap:4px">
+                  <button class="btn btn-sm" onclick="printReq('${r.id}')">列印</button>
+                  ${r.status==='待核准'?`
+                    <button class="btn btn-sm" onclick='openEditReq(${JSON.stringify(r).replace(/'/g,"&#39;")})'>編輯</button>
+                    <button class="btn btn-sm btn-primary" onclick="openApproveModal('${r.id}')">核准付款</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteReq('${r.id}')">刪除</button>
+                  `:''}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+function openReqModal(req) {
+  editingReq = req || null;
+  reqItems = req ? JSON.parse(JSON.stringify(req.items||[])) : [];
+  const today = new Date().toISOString().split('T')[0];
+  const thisMonth = today.substring(0,7);
+
+  document.getElementById('reqModalTitle').textContent = req ? `編輯 ${req.id}` : '新增請款單';
+  document.getElementById('reqDate').value = req?.date || today;
+  document.getElementById('reqBelongMonth').value = req?.belongMonth || thisMonth;
+  document.getElementById('reqUnit').value = req?.unit || currentUnit;
+  document.getElementById('reqApplicant').value = req?.applicant || '';
+  document.getElementById('reqDesc').value = req?.description || '';
+  document.getElementById('reqAttachment').value = req?.attachment || '';
+
+  const accSel = document.getElementById('reqAccount');
+  accSel.innerHTML = accounts.map(a=>`<option ${a.name===req?.account?'selected':''}>${a.name}</option>`).join('');
+
+  renderReqItems();
+  document.getElementById('reqModal').classList.add('show');
+}
+
+function openEditReq(req) { openReqModal(req); }
+
+function closeReqModal() {
+  document.getElementById('reqModal').classList.remove('show');
+  editingReq = null; reqItems = [];
+}
+
+function addReqItem() {
+  const unit = document.getElementById('reqUnit')?.value || currentUnit;
+  reqItems.push({ category: (categories[unit]?.expense||['其他'])[0], description: '', amount: 0 });
+  renderReqItems();
+}
+
+function renderReqItems() {
+  const unit = document.getElementById('reqUnit')?.value || currentUnit;
+  const cats = categories[unit]?.expense || ['其他'];
+  const container = document.getElementById('reqItems');
+  if (!container) return;
+
+  container.innerHTML = reqItems.map((item, i) => `
+    <div style="display:grid;grid-template-columns:150px 1fr 100px 32px;gap:6px;margin-bottom:6px;align-items:center">
+      <select onchange="reqItems[${i}].category=this.value" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px">
+        ${cats.map(c=>`<option ${c===item.category?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <input type="text" value="${item.description}" placeholder="說明"
+        oninput="reqItems[${i}].description=this.value"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px">
+      <input type="number" value="${item.amount||''}" placeholder="0"
+        oninput="reqItems[${i}].amount=parseFloat(this.value)||0;updateReqTotal()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px">
+      <button onclick="reqItems.splice(${i},1);renderReqItems()" class="del-row-btn">×</button>
+    </div>
+  `).join('') || '<div style="color:var(--text3);font-size:12px;padding:8px 0">尚無項目，請按「新增項目」</div>';
+
+  updateReqTotal();
+}
+
+function updateReqTotal() {
+  const total = reqItems.reduce((s,i)=>s+Number(i.amount||0),0);
+  const el = document.getElementById('reqTotal');
+  if (el) el.textContent = fmt(total);
+}
+
+async function saveRequisition() {
+  const req = {
+    id: editingReq?.id,
+    date: document.getElementById('reqDate').value,
+    belongMonth: document.getElementById('reqBelongMonth').value,
+    unit: document.getElementById('reqUnit').value,
+    applicant: document.getElementById('reqApplicant').value,
+    description: document.getElementById('reqDesc').value,
+    items: reqItems,
+    attachment: document.getElementById('reqAttachment').value,
+    account: document.getElementById('reqAccount').value
+  };
+
+  if (!req.date || !req.applicant || !req.description) { toast('日期、請款人、說明為必填', 'err'); return; }
+  if (reqItems.length === 0) { toast('請新增至少一筆費用明細', 'err'); return; }
+
+  const action = editingReq ? 'updateRequisition' : 'addRequisition';
+  const res = await api({ action, req });
+  if (res.success) {
+    toast(editingReq ? '已更新' : `已建立 ${res.id}`, 'ok');
+    closeReqModal();
+    loadRequisitions(currentReqFilter);
+  } else toast(res.message, 'err');
+}
+
+async function deleteReq(id) {
+  if (!confirm(`確定刪除請款單 ${id}？`)) return;
+  const res = await api({ action: 'deleteRequisition', id });
+  if (res.success) { toast('已刪除', 'ok'); loadRequisitions(currentReqFilter); }
+  else toast(res.message, 'err');
+}
+
+// 核准付款
+function openApproveModal(id) {
+  approvingReqId = id;
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('approveDate').value = today;
+  const accSel = document.getElementById('approveAccount');
+  accSel.innerHTML = accounts.map(a=>`<option>${a.name}</option>`).join('');
+  document.getElementById('approveModal').classList.add('show');
+}
+
+function closeApproveModal() {
+  document.getElementById('approveModal').classList.remove('show');
+  approvingReqId = null;
+}
+
+async function confirmApprove() {
+  const payDate = document.getElementById('approveDate').value;
+  const account = document.getElementById('approveAccount').value;
+  const res = await api({ action: 'approveRequisition', id: approvingReqId, payDate, account });
+  if (res.success) {
+    toast(`已核准付款，寫入 ${res.recordsAdded} 筆支出`, 'ok');
+    closeApproveModal();
+    loadRequisitions(currentReqFilter);
+  } else toast(res.message, 'err');
+}
+
+// 列印請款單
+async function printReq(id) {
+  const res = await api({ action: 'getRequisitions', unit: '', status: '' });
+  if (!res.success) return;
+  const req = res.data.find(r => r.id === id);
+  if (!req) return;
+
+  const total = (req.items||[]).reduce((s,i)=>s+Number(i.amount),0);
+  const unitName = UNIT_NAMES[req.unit] || req.unit;
+  const statusLabel = req.status === '已付款' ? `已付款（${req.payDate}）` : req.status;
+
+  const printArea = document.getElementById('printArea');
+  printArea.innerHTML = `
+    <div style="max-width:700px;margin:0 auto;font-family:'Noto Sans TC',sans-serif;color:#000;padding:32px">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:22px;font-weight:700;letter-spacing:0.1em">請 款 單</div>
+        <div style="font-size:13px;color:#666;margin-top:4px">DanceSoul 靈動力肢體開發有限公司</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+        <tr>
+          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;width:100px;font-weight:600">單號</td>
+          <td style="padding:8px 12px;border:1px solid #ccc;font-family:monospace">${req.id}</td>
+          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;width:100px;font-weight:600">日期</td>
+          <td style="padding:8px 12px;border:1px solid #ccc">${req.date}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">所屬單位</td>
+          <td style="padding:8px 12px;border:1px solid #ccc">${unitName}</td>
+          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">請款人</td>
+          <td style="padding:8px 12px;border:1px solid #ccc">${req.applicant}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">說明</td>
+          <td colspan="3" style="padding:8px 12px;border:1px solid #ccc">${req.description}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">歸屬月份</td>
+          <td style="padding:8px 12px;border:1px solid #ccc">${req.belongMonth}</td>
+          <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">狀態</td>
+          <td style="padding:8px 12px;border:1px solid #ccc">${statusLabel}</td>
+        </tr>
+      </table>
+
+      <div style="font-weight:600;margin-bottom:8px">費用明細</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+        <thead>
+          <tr style="background:#f0f0f0">
+            <th style="padding:8px 12px;border:1px solid #ccc;text-align:left">科目</th>
+            <th style="padding:8px 12px;border:1px solid #ccc;text-align:left">說明</th>
+            <th style="padding:8px 12px;border:1px solid #ccc;text-align:right">金額</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(req.items||[]).map(item=>`
+            <tr>
+              <td style="padding:8px 12px;border:1px solid #ccc">${item.category}</td>
+              <td style="padding:8px 12px;border:1px solid #ccc">${item.description||''}</td>
+              <td style="padding:8px 12px;border:1px solid #ccc;text-align:right;font-family:monospace">NT$ ${fmt(item.amount)}</td>
+            </tr>
+          `).join('')}
+          <tr style="background:#f9f9f9;font-weight:700">
+            <td colspan="2" style="padding:8px 12px;border:1px solid #ccc;text-align:right">合計</td>
+            <td style="padding:8px 12px;border:1px solid #ccc;text-align:right;font-family:monospace">NT$ ${fmt(total)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      ${req.attachment ? `<div style="margin-bottom:20px"><span style="font-weight:600">附件：</span>${req.attachment}</div>` : ''}
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px">
+        <div style="text-align:center;border-top:1px solid #999;padding-top:8px;font-size:13px">請款人</div>
+        <div style="text-align:center;border-top:1px solid #999;padding-top:8px;font-size:13px">主管核准</div>
+        <div style="text-align:center;border-top:1px solid #999;padding-top:8px;font-size:13px">財務確認</div>
+      </div>
+    </div>
+  `;
+
+  window.print();
+}
+
 </script>
 </body>
 </html>
