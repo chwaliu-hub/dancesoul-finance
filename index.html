@@ -627,6 +627,10 @@
   <button class="nav-btn active" onclick="showPage('entry')">記帳</button>
   <button class="nav-btn" onclick="showPage('ledger')">明細</button>
   <button class="nav-btn" onclick="showPage('pl')">損益表</button>
+  <button class="nav-btn" onclick="showPage('yearly')">年度報表</button>
+  <button class="nav-btn" onclick="showPage('trend')">趨勢圖</button>
+  <button class="nav-btn" onclick="showPage('receivables')">應收應付</button>
+  <button class="nav-btn" onclick="showPage('hr')">HR</button>
   <button class="nav-btn" onclick="showPage('all')">總覽</button>
   <button class="nav-btn" onclick="showPage('accounts')">帳戶</button>
   <button class="nav-btn" onclick="showPage('settings')">設定</button>
@@ -762,19 +766,23 @@ function updateAccent() {
 function showPage(page) {
   currentPage = page;
   document.querySelectorAll('.nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['entry','ledger','pl','all','accounts','settings'][i] === page);
+    b.classList.toggle('active', ['entry','ledger','pl','yearly','trend','receivables','hr','all','accounts','settings'][i] === page);
   });
   renderPage();
 }
 
 function renderPage() {
   switch (currentPage) {
-    case 'entry':    renderEntry(); break;
-    case 'ledger':   renderLedger(); break;
-    case 'pl':       renderPL(); break;
-    case 'all':      renderAll(); break;
-    case 'accounts': renderAccounts(); break;
-    case 'settings': renderSettings(); break;
+    case 'entry':       renderEntry(); break;
+    case 'ledger':      renderLedger(); break;
+    case 'pl':          renderPL(); break;
+    case 'yearly':      renderYearly(); break;
+    case 'trend':       renderTrend(); break;
+    case 'receivables': renderReceivables(); break;
+    case 'hr':          renderHR(); break;
+    case 'all':         renderAll(); break;
+    case 'accounts':    renderAccounts(); break;
+    case 'settings':    renderSettings(); break;
   }
 }
 
@@ -1410,6 +1418,534 @@ function toast(msg, type) {
 function setStatus(type, text) {
   document.getElementById('statusDot').className = 'status-dot ' + type;
   document.getElementById('statusText').textContent = text;
+}
+
+// ============================================================
+// 年度損益表
+// ============================================================
+async function renderYearly() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">${UNIT_NAMES[currentUnit]} · 年度損益表</div>
+      <div class="month-row">
+        <label>年度</label>
+        <select id="yearlyYear" onchange="loadYearly()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+          ${[2026,2025,2024,2023].map(y => `<option ${y===currentYear?'selected':''}>${y}</option>`).join('')}
+        </select>
+      </div>
+      <div id="yearlyContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+    </div>
+  `;
+  await loadYearly();
+}
+
+async function loadYearly() {
+  const content = document.getElementById('yearlyContent');
+  if (!content) return;
+  const year = document.getElementById('yearlyYear')?.value || currentYear;
+
+  try {
+    const res = await api({ action: 'getYearlySummary', unit: currentUnit, year });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const d = res.data;
+    const months = Array.from({length:12},(_,i)=>i+1);
+    const mLabels = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+    // 摘要列
+    const summaryRow = months.map(m => {
+      const s = d.months[m];
+      const netClass = s.netProfit >= 0 ? 'income' : 'expense';
+      return `
+        <td style="text-align:right;padding:8px 10px;border-right:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--income-color)">${fmt(s.totalIncome)}</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--expense-color)">${fmt(s.totalExpense)}</div>
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--${netClass}-color);margin-top:2px;border-top:1px solid var(--border);padding-top:2px">${s.netProfit>=0?'+':''}${fmt(s.netProfit)}</div>
+        </td>`;
+    }).join('');
+
+    // 支出各科目列
+    const expRows = d.expenseCategories.map(cat => {
+      const cells = months.map(m => {
+        const val = d.months[m].expenseByCategory[cat] || 0;
+        return `<td style="text-align:right;padding:6px 10px;font-family:var(--mono);font-size:12px;color:${val?'var(--expense-color)':'var(--text3)'};border-right:1px solid var(--border)">${val?fmt(val):'—'}</td>`;
+      }).join('');
+      return `<tr><td style="padding:6px 12px;color:var(--text2);font-size:12px;border-right:1px solid var(--border);white-space:nowrap">${cat}</td>${cells}</tr>`;
+    }).join('');
+
+    // 收入各科目列
+    const incRows = d.incomeCategories.map(cat => {
+      const cells = months.map(m => {
+        const val = d.months[m].incomeByCategory[cat] || 0;
+        return `<td style="text-align:right;padding:6px 10px;font-family:var(--mono);font-size:12px;color:${val?'var(--income-color)':'var(--text3)'};border-right:1px solid var(--border)">${val?fmt(val):'—'}</td>`;
+      }).join('');
+      return `<tr><td style="padding:6px 12px;color:var(--text2);font-size:12px;border-right:1px solid var(--border);white-space:nowrap">${cat}</td>${cells}</tr>`;
+    }).join('');
+
+    content.innerHTML = `
+      <div style="overflow-x:auto">
+        <table style="border-collapse:collapse;min-width:900px">
+          <thead>
+            <tr style="background:var(--surface2)">
+              <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--text3);border-right:1px solid var(--border);white-space:nowrap;min-width:100px">科目</th>
+              ${mLabels.map(l=>`<th style="padding:10px 8px;text-align:right;font-size:11px;color:var(--text3);border-right:1px solid var(--border);min-width:80px">${l}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#1a2a1a">
+              <td style="padding:8px 12px;font-size:11px;color:var(--income-color);font-family:var(--mono);letter-spacing:0.08em;border-right:1px solid var(--border)">▸ 收入</td>
+              ${months.map(()=>`<td style="border-right:1px solid var(--border)"></td>`).join('')}
+            </tr>
+            ${incRows}
+            <tr style="background:#2a1a1a">
+              <td style="padding:8px 12px;font-size:11px;color:var(--expense-color);font-family:var(--mono);letter-spacing:0.08em;border-right:1px solid var(--border)">▸ 支出</td>
+              ${months.map(()=>`<td style="border-right:1px solid var(--border)"></td>`).join('')}
+            </tr>
+            ${expRows}
+            <tr style="background:var(--surface2);border-top:2px solid var(--border)">
+              <td style="padding:8px 12px;font-size:12px;font-weight:700;border-right:1px solid var(--border)">月淨損益</td>
+              ${summaryRow}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+// ============================================================
+// 趨勢圖
+// ============================================================
+async function renderTrend() {
+  const cats = categories[currentUnit] || {};
+  const allCats = [...(cats.income||[]).map(c=>({label:c,type:'income'})), ...(cats.expense||[]).map(c=>({label:c,type:'expense'}))];
+
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">${UNIT_NAMES[currentUnit]} · 科目月趨勢</div>
+      <div class="month-row">
+        <label>年度</label>
+        <select id="trendYear" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+          ${[2026,2025,2024,2023].map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('')}
+        </select>
+        <select id="trendType" onchange="updateTrendCats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+          <option value="expense">支出</option>
+          <option value="income">收入</option>
+        </select>
+        <select id="trendCat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+          ${(cats.expense||[]).map(c=>`<option>${c}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary" onclick="loadTrend()">查詢</button>
+      </div>
+      <div id="trendContent"><div class="empty">選擇科目後按查詢</div></div>
+    </div>
+  `;
+}
+
+function updateTrendCats() {
+  const type = document.getElementById('trendType').value;
+  const cats2 = categories[currentUnit][type] || [];
+  document.getElementById('trendCat').innerHTML = cats2.map(c=>`<option>${c}</option>`).join('');
+}
+
+async function loadTrend() {
+  const content = document.getElementById('trendContent');
+  const year = document.getElementById('trendYear').value;
+  const type = document.getElementById('trendType').value;
+  const category = document.getElementById('trendCat').value;
+  if (!category) return;
+
+  content.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
+
+  try {
+    const res = await api({ action: 'getTrend', unit: currentUnit, type, category, year });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+
+    const data = res.data;
+    const max = Math.max(...data.map(d=>d.amount), 1);
+    const mLabels = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const color = type === 'income' ? 'var(--income-color)' : 'var(--expense-color)';
+    const total = data.reduce((s,d)=>s+d.amount,0);
+    const avg = total / 12;
+
+    content.innerHTML = `
+      <div style="margin-bottom:12px;display:flex;gap:24px">
+        <div><span style="font-size:11px;color:var(--text2)">年度合計</span><div style="font-family:var(--mono);font-size:18px;color:${color}">${fmt(total)}</div></div>
+        <div><span style="font-size:11px;color:var(--text2)">月平均</span><div style="font-family:var(--mono);font-size:18px;color:var(--text)">${fmt(Math.round(avg))}</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:200px;padding:0 4px">
+        ${data.map((d,i) => {
+          const h = max > 0 ? Math.round((d.amount / max) * 180) : 0;
+          return `
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text2)">${d.amount?fmt(d.amount):''}</div>
+              <div style="width:100%;height:${h}px;background:${color};border-radius:4px 4px 0 0;min-height:${d.amount?2:0}px;opacity:0.85;transition:height 0.3s"></div>
+              <div style="font-size:10px;color:var(--text3);white-space:nowrap">${mLabels[i]}</div>
+            </div>`;
+        }).join('')}
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+// ============================================================
+// 應收應付
+// ============================================================
+async function renderReceivables() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">${UNIT_NAMES[currentUnit]} · 應收應付款</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="openReceivableModal()">＋ 新增</button>
+        <div class="type-toggle" style="margin-bottom:0">
+          <button class="type-btn active income" id="rtab-income" onclick="filterReceivables('應收')">應收款</button>
+          <button class="type-btn" id="rtab-expense" onclick="filterReceivables('應付')">應付款</button>
+        </div>
+      </div>
+      <div id="recContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+    </div>
+
+    <!-- 應收應付 Modal -->
+    <div class="modal-overlay" id="recModal">
+      <div class="modal">
+        <div class="modal-title" id="recModalTitle">新增應收應付</div>
+        <div class="form-row">
+          <label class="form-label">類型</label>
+          <select class="form-input" id="recType"><option value="應收">應收款</option><option value="應付">應付款</option></select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">對象</label>
+          <input class="form-input" type="text" id="recCounterpart" placeholder="公司或個人名稱">
+        </div>
+        <div class="form-row">
+          <label class="form-label">說明</label>
+          <input class="form-input" type="text" id="recDesc">
+        </div>
+        <div class="form-row">
+          <label class="form-label">金額</label>
+          <input class="form-input" type="number" id="recAmount">
+        </div>
+        <div class="form-row">
+          <label class="form-label">到期日</label>
+          <input class="form-input" type="date" id="recDue">
+        </div>
+        <div class="form-row">
+          <label class="form-label">狀態</label>
+          <select class="form-input" id="recStatus">
+            <option>未收</option><option>已收</option><option>部分收</option><option>未付</option><option>已付</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">備註</label>
+          <input class="form-input" type="text" id="recNote">
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeRecModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveReceivable()">儲存</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadReceivables('應收');
+}
+
+let currentRecFilter = '應收';
+let editingRec = null;
+let allReceivables = [];
+
+async function loadReceivables(filter) {
+  currentRecFilter = filter || currentRecFilter;
+  const content = document.getElementById('recContent');
+  if (!content) return;
+
+  try {
+    const res = await api({ action: 'getReceivables', unit: currentUnit });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    allReceivables = res.data;
+    const filtered = allReceivables.filter(r => r.rtype === currentRecFilter);
+
+    if (filtered.length === 0) { content.innerHTML = '<div class="empty">沒有資料</div>'; return; }
+
+    const total = filtered.reduce((s,r)=>s+Number(r.amount),0);
+    const pending = filtered.filter(r=>!['已收','已付'].includes(r.status)).reduce((s,r)=>s+Number(r.amount),0);
+    const color = currentRecFilter === '應收' ? 'var(--income-color)' : 'var(--expense-color)';
+
+    content.innerHTML = `
+      <div style="display:flex;gap:16px;margin-bottom:16px">
+        <div class="summary-card" style="flex:1"><div class="summary-label">總金額</div><div class="summary-value" style="color:${color}">${fmt(total)}</div></div>
+        <div class="summary-card" style="flex:1"><div class="summary-label">待處理</div><div class="summary-value" style="color:var(--text)">${fmt(pending)}</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>對象</th><th>說明</th><th>到期日</th><th style="text-align:right">金額</th><th>狀態</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${filtered.map(r => {
+              const isOverdue = r.dueDate && new Date(r.dueDate) < new Date() && !['已收','已付'].includes(r.status);
+              const statusColor = ['已收','已付'].includes(r.status) ? 'var(--text3)' : isOverdue ? 'var(--expense-color)' : 'var(--income-color)';
+              return `<tr>
+                <td style="font-weight:500">${r.counterpart}</td>
+                <td style="color:var(--text2)">${r.description}</td>
+                <td style="font-family:var(--mono);font-size:12px;color:${isOverdue?'var(--expense-color)':'var(--text2)'}">${r.dueDate||'—'}${isOverdue?' ⚠':''}
+                </td>
+                <td style="text-align:right;font-family:var(--mono);color:${color}">${fmt(r.amount)}</td>
+                <td><span style="font-size:12px;color:${statusColor}">${r.status}</span></td>
+                <td style="white-space:nowrap">
+                  <button class="btn btn-sm" onclick='openReceivableModal(${JSON.stringify(r).replace(/'/g,"&#39;")})'>編輯</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteRec2('${r.id}')">刪除</button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+function filterReceivables(type) {
+  currentRecFilter = type;
+  document.getElementById('rtab-income')?.classList.toggle('active', type==='應收');
+  document.getElementById('rtab-income')?.classList.toggle('income', type==='應收');
+  document.getElementById('rtab-expense')?.classList.toggle('active', type==='應付');
+  document.getElementById('rtab-expense')?.classList.toggle('expense', type==='應付');
+  loadReceivables(type);
+}
+
+function openReceivableModal(rec) {
+  editingRec = rec || null;
+  document.getElementById('recModalTitle').textContent = rec ? '編輯' : '新增應收應付';
+  document.getElementById('recType').value = rec?.rtype || '應收';
+  document.getElementById('recCounterpart').value = rec?.counterpart || '';
+  document.getElementById('recDesc').value = rec?.description || '';
+  document.getElementById('recAmount').value = rec?.amount || '';
+  document.getElementById('recDue').value = rec?.dueDate || '';
+  document.getElementById('recStatus').value = rec?.status || '未收';
+  document.getElementById('recNote').value = rec?.note || '';
+  document.getElementById('recModal').classList.add('show');
+}
+
+function closeRecModal() {
+  document.getElementById('recModal').classList.remove('show');
+  editingRec = null;
+}
+
+async function saveReceivable() {
+  const record = {
+    id: editingRec?.id,
+    unit: currentUnit,
+    rtype: document.getElementById('recType').value,
+    counterpart: document.getElementById('recCounterpart').value,
+    description: document.getElementById('recDesc').value,
+    amount: parseFloat(document.getElementById('recAmount').value) || 0,
+    dueDate: document.getElementById('recDue').value,
+    status: document.getElementById('recStatus').value,
+    note: document.getElementById('recNote').value
+  };
+  const action = editingRec ? 'updateReceivable' : 'addReceivable';
+  const res = await api({ action, record });
+  if (res.success) { toast('已儲存', 'ok'); closeRecModal(); loadReceivables(); }
+  else toast(res.message, 'err');
+}
+
+async function deleteRec2(id) {
+  if (!confirm('確定刪除？')) return;
+  const res = await api({ action: 'deleteReceivable', id });
+  if (res.success) { toast('已刪除', 'ok'); loadReceivables(); }
+  else toast(res.message, 'err');
+}
+
+// ============================================================
+// HR 頁面
+// ============================================================
+function calcAnnualLeave(startDate) {
+  // 台灣勞基法特休計算
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffMs = now - start;
+  const diffDays = diffMs / (1000*60*60*24);
+  const months = diffDays / 30.44;
+  const years = diffDays / 365.25;
+
+  if (months < 6) return 0;
+  if (years < 1)  return 3;
+  if (years < 2)  return 7;
+  if (years < 3)  return 10;
+  if (years < 5)  return 14;
+  if (years < 10) return 15;
+  return Math.min(15 + Math.floor(years - 10) + 1, 30);
+}
+
+function calcSeniority(startDate) {
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffMs = now - start;
+  const years = Math.floor(diffMs / (365.25*24*60*60*1000));
+  const months = Math.floor((diffMs % (365.25*24*60*60*1000)) / (30.44*24*60*60*1000));
+  return `${years}年${months}個月`;
+}
+
+let editingEmp = null;
+
+async function renderHR() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title">HR · 員工資料與特休</div>
+      <div style="margin-bottom:16px">
+        <button class="btn btn-primary" onclick="openEmpModal()">＋ 新增員工</button>
+      </div>
+      <div id="hrContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
+    </div>
+
+    <!-- 員工 Modal -->
+    <div class="modal-overlay" id="empModal">
+      <div class="modal">
+        <div class="modal-title" id="empModalTitle">新增員工</div>
+        <div class="form-row">
+          <label class="form-label">姓名</label>
+          <input class="form-input" type="text" id="empName">
+        </div>
+        <div class="form-row">
+          <label class="form-label">職稱</label>
+          <input class="form-input" type="text" id="empTitle">
+        </div>
+        <div class="form-row">
+          <label class="form-label">所屬單位</label>
+          <select class="form-input" id="empUnit">
+            <option value="STUDIO">舞蹈教室</option>
+            <option value="CASE">CASE</option>
+            <option value="BENSE">本勢娛樂</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">到職日</label>
+          <input class="form-input" type="date" id="empStart">
+        </div>
+        <div class="form-row">
+          <label class="form-label">薪資結構</label>
+          <select class="form-input" id="empSalaryType">
+            <option>月薪</option><option>鐘點</option><option>專案</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">薪資金額</label>
+          <input class="form-input" type="number" id="empSalaryAmt">
+        </div>
+        <div class="form-row">
+          <label class="form-label">備註</label>
+          <input class="form-input" type="text" id="empNote">
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeEmpModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveEmployee()">儲存</button>
+        </div>
+      </div>
+    </div>
+  `;
+  await loadHR();
+}
+
+async function loadHR() {
+  const content = document.getElementById('hrContent');
+  if (!content) return;
+  try {
+    const res = await api({ action: 'getEmployees' });
+    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const emps = res.data;
+    if (emps.length === 0) { content.innerHTML = '<div class="empty">尚無員工資料</div>'; return; }
+
+    content.innerHTML = `
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>姓名</th><th>職稱</th><th>單位</th><th>到職日</th><th>年資</th>
+            <th>薪資</th><th style="text-align:center">特休(天)</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${emps.map(e => {
+              const leave = calcAnnualLeave(e.startDate);
+              const seniority = calcSeniority(e.startDate);
+              const unitName = UNIT_NAMES[e.unit] || e.unit;
+              const unitColor = UNIT_ACCENT[e.unit] || 'var(--text)';
+              return `<tr>
+                <td style="font-weight:500">${e.name}</td>
+                <td style="color:var(--text2)">${e.title}</td>
+                <td><span style="font-size:11px;color:${unitColor};font-family:var(--mono)">${unitName}</span></td>
+                <td style="font-family:var(--mono);font-size:12px">${e.startDate}</td>
+                <td style="font-size:12px;color:var(--text2)">${seniority}</td>
+                <td style="font-family:var(--mono)">${e.salaryType} ${fmt(e.salaryAmount)}</td>
+                <td style="text-align:center">
+                  <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">${leave}</span>
+                </td>
+                <td style="white-space:nowrap">
+                  <button class="btn btn-sm" onclick='openEmpModal(${JSON.stringify(e).replace(/'/g,"&#39;")})'>編輯</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteEmp('${e.id}')">刪除</button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text3)">
+        ※ 特休依台灣勞基法第38條計算，以今日為基準。實際可用天數請依公司規定調整。
+      </div>
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
+  }
+}
+
+function openEmpModal(emp) {
+  editingEmp = emp || null;
+  document.getElementById('empModalTitle').textContent = emp ? '編輯員工' : '新增員工';
+  document.getElementById('empName').value = emp?.name || '';
+  document.getElementById('empTitle').value = emp?.title || '';
+  document.getElementById('empUnit').value = emp?.unit || 'STUDIO';
+  document.getElementById('empStart').value = emp?.startDate || '';
+  document.getElementById('empSalaryType').value = emp?.salaryType || '月薪';
+  document.getElementById('empSalaryAmt').value = emp?.salaryAmount || '';
+  document.getElementById('empNote').value = emp?.note || '';
+  document.getElementById('empModal').classList.add('show');
+}
+
+function closeEmpModal() {
+  document.getElementById('empModal').classList.remove('show');
+  editingEmp = null;
+}
+
+async function saveEmployee() {
+  const emp = {
+    id: editingEmp?.id,
+    name: document.getElementById('empName').value,
+    title: document.getElementById('empTitle').value,
+    unit: document.getElementById('empUnit').value,
+    startDate: document.getElementById('empStart').value,
+    salaryType: document.getElementById('empSalaryType').value,
+    salaryAmount: parseFloat(document.getElementById('empSalaryAmt').value) || 0,
+    note: document.getElementById('empNote').value
+  };
+  if (!emp.name || !emp.startDate) { toast('姓名和到職日必填', 'err'); return; }
+  const res = await api({ action: 'saveEmployee', employee: emp });
+  if (res.success) { toast('已儲存', 'ok'); closeEmpModal(); loadHR(); }
+  else toast(res.message, 'err');
+}
+
+async function deleteEmp(id) {
+  if (!confirm('確定刪除這位員工？')) return;
+  const res = await api({ action: 'deleteEmployee', id });
+  if (res.success) { toast('已刪除', 'ok'); loadHR(); }
+  else toast(res.message, 'err');
 }
 </script>
 </body>
