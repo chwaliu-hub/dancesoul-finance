@@ -2533,7 +2533,7 @@ async function printReq(id) {
         </tr>
         <tr>
           <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">歸屬月份</td>
-          <td style="padding:8px 12px;border:1px solid #ccc">${req.belongMonth}</td>
+          <td style="padding:8px 12px;border:1px solid #ccc">${String(req.belongMonth).substring(0,7)}</td>
           <td style="padding:8px 12px;border:1px solid #ccc;background:#f9f9f9;font-weight:600">狀態</td>
           <td style="padding:8px 12px;border:1px solid #ccc">${statusLabel}</td>
         </tr>
