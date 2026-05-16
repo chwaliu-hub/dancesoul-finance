@@ -2063,6 +2063,40 @@ async function renderHR() {
       <div id="hrContent"><div class="loading"><div class="spinner"></div>載入中...</div></div>
     </div>
 
+    <!-- 特休記錄 Modal -->
+    <div class="modal-overlay" id="leaveModal">
+      <div class="modal" style="width:520px">
+        <div class="modal-title">特休記錄 · <span id="leaveEmpName"></span></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:flex-end">
+          <div style="flex:1">
+            <label class="form-label">日期</label>
+            <input class="form-input" type="date" id="leaveDate">
+          </div>
+          <div style="width:80px">
+            <label class="form-label">天數</label>
+            <input class="form-input" type="number" id="leaveDays" min="0.5" step="0.5" placeholder="1">
+          </div>
+          <div style="flex:1">
+            <label class="form-label">備註</label>
+            <input class="form-input" type="text" id="leaveNote" placeholder="例：年假">
+          </div>
+          <button class="btn btn-primary" onclick="addLeave()" style="flex-shrink:0">新增</button>
+        </div>
+        <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">使用記錄</span>
+          <div style="font-family:var(--mono);font-size:13px">
+            應有 <span id="leaveTotal" style="color:var(--accent);font-weight:700">0</span> 天 ／
+            已用 <span id="leaveUsed" style="color:var(--expense-color);font-weight:700">0</span> 天 ／
+            剩餘 <span id="leaveLeft" style="color:var(--income-color);font-weight:700">0</span> 天
+          </div>
+        </div>
+        <div id="leaveList" style="max-height:280px;overflow-y:auto"></div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeLeaveModal()">關閉</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 員工 Modal -->
     <div class="modal-overlay" id="empModal">
       <div class="modal">
@@ -2115,35 +2149,38 @@ async function loadHR() {
   const content = document.getElementById('hrContent');
   if (!content) return;
   try {
-    const res = await api({ action: 'getEmployees' });
-    if (!res.success) { content.innerHTML = `<div class="empty">${res.message}</div>`; return; }
-    const emps = res.data;
+    const empRes = await api({ action: 'getEmployees' });
+    if (!empRes.success) { content.innerHTML = `<div class="empty">${empRes.message}</div>`; return; }
+    const emps = empRes.data;
     if (emps.length === 0) { content.innerHTML = '<div class="empty">尚無員工資料</div>'; return; }
+
+    const leaveRes = await api({ action: 'getLeaveRecords', empId: '' });
+    const leaveData = leaveRes.success ? leaveRes.data : [];
 
     content.innerHTML = `
       <div class="tbl-wrap">
         <table>
           <thead><tr>
             <th>姓名</th><th>職稱</th><th>單位</th><th>到職日</th><th>年資</th>
-            <th>薪資</th><th style="text-align:center">特休(天)</th><th></th>
+            <th style="text-align:center">應有特休</th><th style="text-align:center">已使用</th><th style="text-align:center">剩餘</th><th></th>
           </tr></thead>
           <tbody>
             ${emps.map(e => {
-              const leave = calcAnnualLeave(e.startDate);
-              const seniority = calcSeniority(e.startDate);
-              const unitName = UNIT_NAMES[e.unit] || e.unit;
+              const totalLeave = calcAnnualLeave(e.startDate);
+              const usedLeave = leaveData.filter(l => l.empId === e.id).reduce((s,l)=>s+Number(l.days),0);
+              const leftLeave = totalLeave - usedLeave;
               const unitColor = UNIT_ACCENT[e.unit] || 'var(--text)';
               return `<tr>
                 <td style="font-weight:500">${e.name}</td>
                 <td style="color:var(--text2)">${e.title}</td>
-                <td><span style="font-size:11px;color:${unitColor};font-family:var(--mono)">${unitName}</span></td>
+                <td><span style="font-size:11px;color:${unitColor};font-family:var(--mono)">${UNIT_NAMES[e.unit]||e.unit}</span></td>
                 <td style="font-family:var(--mono);font-size:12px">${e.startDate}</td>
-                <td style="font-size:12px;color:var(--text2)">${seniority}</td>
-                <td style="font-family:var(--mono)">${e.salaryType} ${fmt(e.salaryAmount)}</td>
-                <td style="text-align:center">
-                  <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">${leave}</span>
-                </td>
+                <td style="font-size:12px;color:var(--text2)">${calcSeniority(e.startDate)}</td>
+                <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">${totalLeave}</td>
+                <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--expense-color)">${usedLeave}</td>
+                <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${leftLeave<=0?'var(--expense-color)':'var(--income-color)'}">${leftLeave}</td>
                 <td style="white-space:nowrap">
+                  <button class="btn btn-sm" onclick="openLeaveModal('${e.id}','${e.name}',${totalLeave},${usedLeave})">特休記錄</button>
                   <button class="btn btn-sm" onclick='openEmpModal(${JSON.stringify(e).replace(/'/g,"&#39;")})'>編輯</button>
                   <button class="btn btn-sm btn-danger" onclick="deleteEmp('${e.id}')">刪除</button>
                 </td>
@@ -2153,12 +2190,87 @@ async function loadHR() {
         </table>
       </div>
       <div style="margin-top:12px;font-size:11px;color:var(--text3)">
-        ※ 特休依台灣勞基法第38條計算，以今日為基準。實際可用天數請依公司規定調整。
+        ※ 特休依台灣勞基法第38條計算，以今日為基準。
       </div>
     `;
   } catch(e) {
     content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
   }
+}
+
+let currentLeaveEmpId = '';
+let currentLeaveTotal = 0;
+
+async function openLeaveModal(empId, empName, total, used) {
+  currentLeaveEmpId = empId;
+  currentLeaveTotal = total;
+  document.getElementById('leaveEmpName').textContent = empName;
+  document.getElementById('leaveDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('leaveDays').value = '';
+  document.getElementById('leaveNote').value = '';
+  document.getElementById('leaveTotal').textContent = total;
+  document.getElementById('leaveModal').classList.add('show');
+  await loadLeaveRecords();
+}
+
+function closeLeaveModal() {
+  document.getElementById('leaveModal').classList.remove('show');
+}
+
+async function loadLeaveRecords() {
+  const list = document.getElementById('leaveList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
+  try {
+    const res = await api({ action: 'getLeaveRecords', empId: currentLeaveEmpId });
+    if (!res.success) { list.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const records = res.data;
+    const used = records.reduce((s,r)=>s+Number(r.days),0);
+    const left = currentLeaveTotal - used;
+
+    document.getElementById('leaveUsed').textContent = used;
+    document.getElementById('leaveLeft').textContent = left;
+    document.getElementById('leaveLeft').style.color = left <= 0 ? 'var(--expense-color)' : 'var(--income-color)';
+
+    if (records.length === 0) {
+      list.innerHTML = '<div class="empty" style="padding:16px">尚無特休記錄</div>';
+      return;
+    }
+
+    list.innerHTML = records.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:6px">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap">${r.date}</div>
+        <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--expense-color);white-space:nowrap">${r.days}天</div>
+        <div style="flex:1;font-size:13px;color:var(--text2)">${r.note||''}</div>
+        <button onclick="deleteLeave('${r.id}')" class="del-row-btn">×</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty">載入失敗</div>`;
+  }
+}
+
+async function addLeave() {
+  const date = document.getElementById('leaveDate').value;
+  const days = parseFloat(document.getElementById('leaveDays').value);
+  const note = document.getElementById('leaveNote').value;
+  const empName = document.getElementById('leaveEmpName').textContent;
+  if (!date || !days || days <= 0) { toast('請填日期和天數', 'err'); return; }
+  const res = await api({ action: 'addLeaveRecord', record: { empId: currentLeaveEmpId, empName, date, days, note } });
+  if (res.success) {
+    toast('已新增', 'ok');
+    document.getElementById('leaveDays').value = '';
+    document.getElementById('leaveNote').value = '';
+    await loadLeaveRecords();
+    await loadHR();
+  } else toast(res.message, 'err');
+}
+
+async function deleteLeave(id) {
+  if (!confirm('確定刪除這筆特休記錄？')) return;
+  const res = await api({ action: 'deleteLeaveRecord', id });
+  if (res.success) { toast('已刪除', 'ok'); await loadLeaveRecords(); await loadHR(); }
+  else toast(res.message, 'err');
 }
 
 function openEmpModal(emp) {
