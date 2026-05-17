@@ -3064,7 +3064,7 @@ async function artistGenerateSettle() {
               <td style="text-align:right;font-family:var(--font);color:var(--accent-bense);font-weight:600">${fmt(rec.artistShare)}</td>
             </tr>`).join('')}
         </tbody>
-        <tfoot><tr style="background:var(--surface);font-family:var(--mono);font-weight:600">
+        <tfoot><tr style="background:var(--surface);font-family:var(--font);font-weight:600">
           <td colspan="2">合計</td>
           <td style="text-align:right">${fmt(totalIncome)}</td>
           <td></td>
@@ -3074,15 +3074,15 @@ async function artistGenerateSettle() {
       </table>
       <div style="margin-top:1.5rem;padding:1rem 1.2rem;background:var(--surface);display:flex;justify-content:space-between;align-items:center;border-radius:4px">
         <span style="color:var(--text2)">本月實際撥款金額</span>
-        <span style="font-family:var(--mono);font-size:1.5rem;color:var(--accent-bense);font-weight:700">NT$ ${fmt(totalArtist)}</span>
+        <span style="font-family:var(--font);font-size:1.5rem;color:var(--accent-bense);font-weight:700">NT$ ${fmt(totalArtist)}</span>
       </div>
       <div style="margin-top:2.5rem;display:flex;justify-content:flex-end;gap:4rem;font-size:0.85rem">
         <div style="text-align:center">
-          <div style="color:var(--text2);font-size:11px;font-family:var(--mono);margin-bottom:2rem">公司代表</div>
+          <div style="color:var(--text2);font-size:11px;font-family:var(--font);margin-bottom:2rem">公司代表</div>
           <div style="width:120px;border-bottom:1px solid var(--text)"></div>
         </div>
         <div style="text-align:center">
-          <div style="color:var(--text2);font-size:11px;font-family:var(--mono);margin-bottom:2rem">藝人簽名</div>
+          <div style="color:var(--text2);font-size:11px;font-family:var(--font);margin-bottom:2rem">藝人簽名</div>
           <div style="width:120px;border-bottom:1px solid var(--text)"></div>
         </div>
       </div>
