@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://script.google.com https://fonts.googleapis.com https://fonts.gstatic.com;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>藝人抽成管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --ink: #1a1410;
+    --paper: #f5f0e8;
+    --accent: #8b2e00;
+    --accent-light: #c4501a;
+    --rule: #d4c9b0;
+    --muted: #7a6e5f;
+    --surface: #ece6d8;
+    --white: #fdfaf4;
+    --success: #2d6a3f;
+    --danger: #8b2020;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Serif TC', serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    border-bottom: 3px solid var(--accent);
+  }
+  header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  header span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--rule);
+    letter-spacing: 0.05em;
+  }
+
+  /* NAV TABS */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    padding: 0 2rem;
+    gap: 0;
+  }
+  nav button {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 0.85rem 1.4rem;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 0.9rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  nav button:hover { color: var(--ink); }
+  nav button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* MAIN */
+  main {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARD */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  input, select, textarea {
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    padding: 0.55rem 0.8rem;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    border-radius: 1px;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); background: var(--white); }
+
+  /* PREVIEW BOX */
+  .preview-box {
+    background: var(--surface);
+    border: 1px dashed var(--rule);
+    padding: 1rem;
+    border-radius: 1px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+  .preview-item { display: flex; flex-direction: column; gap: 0.2rem; }
+  .preview-label { font-size: 0.7rem; color: var(--muted); }
+  .preview-value { font-size: 1rem; color: var(--ink); font-weight: 500; }
+  .preview-value.highlight { color: var(--accent); font-size: 1.2rem; }
+
+  /* BUTTONS */
+  .btn {
+    border: none;
+    padding: 0.65rem 1.5rem;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 1px;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--white);
+  }
+  .btn-primary:hover { background: var(--accent-light); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+  }
+  .btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+  }
+  .btn-danger:hover { background: var(--danger); color: white; }
+  .btn-sm {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    font-family: 'Noto Serif TC', serif;
+    border-radius: 1px;
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.2rem;
+    align-items: center;
+  }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-bar select, .filter-bar input {
+    width: auto;
+    min-width: 140px;
+  }
+
+  /* TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  th {
+    background: var(--surface);
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--rule);
+    font-family: 'DM Mono', monospace;
+  }
+  td {
+    padding: 0.75rem 0.8rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--paper); }
+  .mono { font-family: 'DM Mono', monospace; }
+  .text-right { text-align: right; }
+  .text-accent { color: var(--accent); font-weight: 600; }
+  .text-muted { color: var(--muted); font-size: 0.82rem; }
+
+  /* SUMMARY ROW */
+  .summary-row td {
+    background: var(--surface);
+    font-weight: 600;
+    border-top: 2px solid var(--rule);
+    border-bottom: none;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* SETTLEMENT PRINT */
+  .settlement-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .settlement-header h2 {
+    font-size: 1.4rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+  }
+  .settlement-header p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-family: 'DM Mono', monospace;
+  }
+  .settlement-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    font-size: 0.88rem;
+  }
+  .settlement-meta-item { display: flex; flex-direction: column; gap: 0.2rem; }
+  .settlement-meta-item span:first-child { color: var(--muted); font-size: 0.75rem; font-family: 'DM Mono', monospace; letter-spacing: 0.08em; }
+  .settlement-total {
+    margin-top: 1.5rem;
+    padding: 1rem 1.2rem;
+    background: var(--surface);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .settlement-total-label { font-size: 0.9rem; color: var(--muted); }
+  .settlement-total-amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.6rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .sign-area {
+    margin-top: 2.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 4rem;
+    font-size: 0.85rem;
+  }
+  .sign-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .sign-line::after {
+    content: '';
+    display: block;
+    width: 120px;
+    border-bottom: 1px solid var(--ink);
+    margin-top: 2rem;
+  }
+  .sign-line span { color: var(--muted); font-size: 0.78rem; font-family: 'DM Mono', monospace; }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.75rem 1.2rem;
+    border-radius: 2px;
+    font-size: 0.88rem;
+    display: none;
+    z-index: 999;
+    border-left: 3px solid var(--accent);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* LOADING */
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+  }
+  .empty {
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  /* MODAL */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,20,16,0.55);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    padding: 2rem;
+    width: 480px;
+    max-width: 90vw;
+    border-radius: 2px;
+  }
+  .modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* PRINT */
+  @media print {
+    header, nav, .filter-bar, .btn-row, .no-print { display: none !important; }
+    body { background: white; }
+    .card { border: none; padding: 0; box-shadow: none; }
+    main { margin: 0; max-width: 100%; }
+    .section { display: block !important; }
+    #tab-input, #tab-records { display: none !important; }
+    #tab-settle { display: block !important; }
+  }
+
+  /* SETUP BANNER */
+  .setup-banner {
+    background: #fff8e1;
+    border: 1px solid #f0c040;
+    border-left: 4px solid #e6a800;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.88rem;
+    border-radius: 1px;
+  }
+  .setup-banner strong { display: block; margin-bottom: 0.3rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>藝人抽成管理</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <span id="header-date"></span>
+    <button onclick="resetApiUrl()" style="background:transparent;border:1px solid var(--rule);color:var(--rule);padding:0.3rem 0.7rem;font-size:0.75rem;cursor:pointer;border-radius:1px;font-family:'DM Mono',monospace;letter-spacing:0.05em">⚙ API設定</button>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('input')">＋ 輸入通告</button>
+  <button onclick="switchTab('records')">　紀錄查詢</button>
+  <button onclick="switchTab('settle')">　結算單</button>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════════
+     SETUP BANNER (API未設定時顯示)
+════════════════════════════════ -->
+<div class="setup-banner" id="setup-banner" style="display:none">
+  <strong>⚠️ 尚未設定 API 網址</strong>
+  請將 Apps Script 部署後，點右上角「齒輪」→ 貼上網址完成設定。
+</div>
+
+<!-- ═══════════════════════════════
+     TAB 1：輸入通告
+════════════════════════════════ -->
+<div id="tab-input" class="section active">
+  <div class="card">
+    <div class="card-title">新增通告紀錄</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>藝人</label>
+        <select id="input-artist" onchange="onArtistChange()">
+          <option value="">— 選擇藝人 —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>通告日期</label>
+        <input type="date" id="input-date">
+      </div>
+      <div class="form-group full">
+        <label>通告名稱</label>
+        <input type="text" id="input-jobname" placeholder="例：某品牌業配、全明星運動會" list="jobname-list" autocomplete="off">
+        <datalist id="jobname-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label>通告費（元）</label>
+        <input type="number" id="input-income" placeholder="0" oninput="calcPreview()">
+      </div>
+      <div class="form-group">
+        <label>公司抽成 %</label>
+        <input type="number" id="input-rate" placeholder="40" step="0.1" oninput="calcPreview()">
+      </div>
+      <div class="form-group full">
+        <div class="preview-box">
+          <div class="preview-item">
+            <span class="preview-label">公司抽成</span>
+            <span class="preview-value mono" id="prev-company">—</span>
+          </div>
+          <div class="preview-item">
+            <span class="preview-label">藝人實領</span>
+            <span class="preview-value highlight mono" id="prev-artist">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>發款月份（選填，之後可補）</label>
+        <input type="month" id="input-paymonth">
+      </div>
+      <div class="form-group">
+        <label>備註</label>
+        <input type="text" id="input-note" placeholder="選填">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="addRecord()">確認新增</button>
+      <button class="btn btn-ghost" onclick="clearInputForm()">清除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     TAB 2：紀錄查詢
+════════════════════════════════ -->
+<div id="tab-records" class="section">
+  <div class="card">
+    <div class="card-title">通告紀錄</div>
+    <div class="filter-bar">
+      <select id="filter-artist" onchange="loadRecords()">
+        <option value="all">全部藝人</option>
+      </select>
+      <input type="month" id="filter-month" onchange="loadRecords()" placeholder="通告月份">
+      <input type="month" id="filter-paymonth" onchange="loadRecords()" placeholder="發款月份">
+      <button class="btn btn-ghost" onclick="clearFilter()">清除篩選</button>
+    </div>
+    <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.8rem;font-family:'DM Mono',monospace;">左欄：通告日期月份　右欄：發款月份</div>
+    <div id="records-table-wrap">
+      <div class="loading">載入中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     TAB 3：結算單
+════════════════════════════════ -->
+<div id="tab-settle" class="section">
+  <div class="card no-print">
+    <div class="card-title">產出結算單</div>
+    <div class="filter-bar">
+      <select id="settle-artist">
+        <option value="">— 選擇藝人 —</option>
+      </select>
+      <input type="month" id="settle-month" title="發款月份">
+      <button class="btn btn-primary" onclick="generateSettle()">產出結算單</button>
+    </div>
+    <div style="font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace;">依「發款月份」篩選，非通告日期</div>
+  </div>
+
+  <div id="settle-output" style="display:none">
+    <div class="card" id="settle-print-area">
+      <div class="settlement-header">
+        <h2>通告費結算單</h2>
+        <p id="settle-period-label"></p>
+      </div>
+      <div class="settlement-meta">
+        <div class="settlement-meta-item">
+          <span>ARTIST</span>
+          <span id="settle-name" style="font-size:1.1rem;font-weight:600"></span>
+        </div>
+        <div class="settlement-meta-item" style="text-align:right">
+          <span>BANK ACCOUNT</span>
+          <span id="settle-bank" class="mono"></span>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>通告名稱</th>
+            <th class="text-right">通告費</th>
+            <th class="text-right">抽成%</th>
+            <th class="text-right">公司抽成</th>
+            <th class="text-right">藝人實領</th>
+          </tr>
+        </thead>
+        <tbody id="settle-tbody"></tbody>
+        <tfoot>
+          <tr class="summary-row">
+            <td colspan="2">合計</td>
+            <td class="text-right" id="settle-sum-income"></td>
+            <td></td>
+            <td class="text-right" id="settle-sum-company"></td>
+            <td class="text-right text-accent" id="settle-sum-artist"></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="settlement-total">
+        <span class="settlement-total-label">本月實際撥款金額</span>
+        <span class="settlement-total-amount" id="settle-total"></span>
+      </div>
+      <div class="sign-area">
+        <div class="sign-line"><span>公司代表</span></div>
+        <div class="sign-line"><span>藝人簽名</span></div>
+      </div>
+    </div>
+    <div class="btn-row no-print">
+      <button class="btn btn-primary" onclick="window.print()">列印 / 存成 PDF</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('settle-output').style.display='none'">關閉</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- EDIT MODAL -->
+<div class="modal-backdrop" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">編輯通告紀錄</div>
+    <input type="hidden" id="edit-id">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>藝人</label>
+        <select id="edit-artist"></select>
+      </div>
+      <div class="form-group">
+        <label>通告日期</label>
+        <input type="date" id="edit-date">
+      </div>
+      <div class="form-group full">
+        <label>通告名稱</label>
+        <input type="text" id="edit-jobname">
+      </div>
+      <div class="form-group">
+        <label>通告費（元）</label>
+        <input type="number" id="edit-income">
+      </div>
+      <div class="form-group">
+        <label>公司抽成 %</label>
+        <input type="number" id="edit-rate" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>發款月份</label>
+        <input type="month" id="edit-paymonth">
+      </div>
+      <div class="form-group">
+        <label>備註</label>
+        <input type="text" id="edit-note">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveEdit()">儲存</button>
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════
+// CONFIG
+// ══════════════════════════════════
+const HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbzR-IHeg_am4hV6wxRU0ojM0ukdfvt5Fu2m2-y6kx-QiPSA704gApcpPkMUJhv6Xu9ubQ/exec';
+let API_URL = HARDCODED_URL;
+// 也同步存到 localStorage
+localStorage.setItem('artistApiUrl', API_URL);
+
+// ══════════════════════════════════
+let artists = [];
+let records = [];
+
+// 初始日期
+document.getElementById('input-date').value = today();
+document.getElementById('filter-month').value = thisMonth();
+document.getElementById('settle-month').value = thisMonth();
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+
+function today() {
+  return new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+}
+function thisMonth() {
+  const d = new Date();
+  return d.toISOString().substring(0, 7);
+}
+
+// ══════════════════════════════════
+// API CALL
+// ══════════════════════════════════
+async function api(params) {
+  const url = new URL(API_URL);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  return await res.json();
+}
+
+// ══════════════════════════════════
+// INIT
+// ══════════════════════════════════
+async function init() {
+  if (!API_URL) {
+    document.getElementById('setup-banner').style.display = 'block';
+    return;
+  }
+  try {
+    const r = await api({ action: 'getArtists' });
+    if (r.success) {
+      artists = r.data;
+      populateArtistSelects();
+      loadRecords();
+      loadJobNameList();
+    }
+  } catch(e) {
+    showToast('無法連線，請確認 API 網址');
+  }
+}
+
+async function loadJobNameList() {
+  try {
+    const r = await api({ action: 'getRecords', artist: 'all', month: '' });
+    if (!r.success) return;
+    const names = [...new Set(r.data.map(rec => rec.jobName).filter(Boolean))];
+    const dl = document.getElementById('jobname-list');
+    dl.innerHTML = names.map(n => `<option value="${n}">`).join('');
+  } catch(e) { /* 靜默失敗 */ }
+}
+
+function populateArtistSelects() {
+  const selects = ['input-artist', 'filter-artist', 'settle-artist', 'edit-artist'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    // 保留第一個 option（placeholder 或「全部」）
+    const first = sel.options[0];
+    sel.innerHTML = '';
+    sel.appendChild(first);
+    artists.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.name;
+      opt.textContent = a.name;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ══════════════════════════════════
+// TAB
+// ══════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'records') loadRecords();
+}
+
+// ══════════════════════════════════
+// INPUT FORM
+// ══════════════════════════════════
+function onArtistChange() {
+  const name = document.getElementById('input-artist').value;
+  const a = artists.find(x => x.name === name);
+  if (a) document.getElementById('input-rate').value = a.defaultRate;
+  calcPreview();
+}
+
+function calcPreview() {
+  const income = parseFloat(document.getElementById('input-income').value) || 0;
+  const rate = parseFloat(document.getElementById('input-rate').value) || 0;
+  const company = Math.round(income * rate / 100);
+  const artist = income - company;
+  document.getElementById('prev-company').textContent = income ? fmtMoney(company) : '—';
+  document.getElementById('prev-artist').textContent = income ? fmtMoney(artist) : '—';
+}
+
+async function addRecord() {
+  const artist = document.getElementById('input-artist').value;
+  const date = document.getElementById('input-date').value;
+  const jobName = document.getElementById('input-jobname').value.trim();
+  const income = document.getElementById('input-income').value;
+  const rate = document.getElementById('input-rate').value;
+  const note = document.getElementById('input-note').value.trim();
+
+  if (!artist || !date || !jobName || !income) {
+    showToast('請填寫藝人、日期、通告名稱、金額');
+    return;
+  }
+  try {
+    const payMonth = document.getElementById('input-paymonth').value;
+  const r = await api({ action: 'addRecord', artist, date, jobName, income, rate, note, payMonth });
+    if (r.success) {
+      showToast('✓ 新增成功');
+      clearInputForm();
+      loadJobNameList();
+    } else {
+      showToast('新增失敗：' + r.message);
+    }
+  } catch(e) {
+    showToast('連線錯誤');
+  }
+}
+
+function clearInputForm() {
+  document.getElementById('input-artist').value = '';
+  document.getElementById('input-date').value = today();
+  document.getElementById('input-jobname').value = '';
+  document.getElementById('input-income').value = '';
+  document.getElementById('input-rate').value = '';
+  document.getElementById('input-note').value = '';
+  document.getElementById('input-paymonth').value = '';
+  document.getElementById('prev-company').textContent = '—';
+  document.getElementById('prev-artist').textContent = '—';
+}
+
+// ══════════════════════════════════
+// RECORDS
+// ══════════════════════════════════
+async function loadRecords() {
+  const wrap = document.getElementById('records-table-wrap');
+  wrap.innerHTML = '<div class="loading">載入中...</div>';
+  const artist = document.getElementById('filter-artist').value;
+  const month = document.getElementById('filter-month').value;
+  const payMonth = document.getElementById('filter-paymonth').value;
+  try {
+    const r = await api({ action: 'getRecords', artist, month, payMonth });
+    if (!r.success) { wrap.innerHTML = '<div class="empty">載入失敗</div>'; return; }
+    records = r.data;
+    renderRecordsTable(wrap, records);
+  } catch(e) {
+    wrap.innerHTML = '<div class="empty">連線錯誤</div>';
+  }
+}
+
+function renderRecordsTable(wrap, data) {
+  if (!data.length) { wrap.innerHTML = '<div class="empty">無資料</div>'; return; }
+  let totalIncome = 0, totalCompany = 0, totalArtist = 0;
+  data.forEach(r => {
+    totalIncome += r.income;
+    totalCompany += r.companyShare;
+    totalArtist += r.artistShare;
+  });
+  wrap.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th><th>藝人</th><th>通告名稱</th>
+          <th class="text-right">通告費</th>
+          <th class="text-right">抽成%</th>
+          <th class="text-right">公司抽</th>
+          <th class="text-right">藝人實領</th>
+          <th>發款月份</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(r => `
+          <tr>
+            <td class="mono text-muted">${r.date}</td>
+            <td>${r.artist}</td>
+            <td>${r.jobName}</td>
+            <td class="text-right mono">${fmtMoney(r.income)}</td>
+            <td class="text-right mono">${r.rate}%</td>
+            <td class="text-right mono text-muted">${fmtMoney(r.companyShare)}</td>
+            <td class="text-right mono text-accent">${fmtMoney(r.artistShare)}</td>
+            <td class="mono text-muted">${r.payMonth || '—'}</td>
+            <td style="display:flex;gap:0.4rem;justify-content:flex-end">
+              <button class="btn-sm" onclick="openEdit('${r.id}')">編輯</button>
+              <button class="btn-danger" onclick="deleteRecord('${r.id}')">刪除</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+      <tfoot>
+        <tr class="summary-row">
+          <td colspan="4">合計 ${data.length} 筆</td>
+          <td class="text-right">${fmtMoney(totalIncome)}</td>
+          <td></td>
+          <td class="text-right">${fmtMoney(totalCompany)}</td>
+          <td class="text-right text-accent">${fmtMoney(totalArtist)}</td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>`;
+}
+
+function clearFilter() {
+  document.getElementById('filter-artist').value = 'all';
+  document.getElementById('filter-month').value = '';
+  document.getElementById('filter-paymonth').value = '';
+  loadRecords();
+}
+
+// ══════════════════════════════════
+// DELETE
+// ══════════════════════════════════
+async function deleteRecord(id) {
+  if (!confirm('確定刪除這筆紀錄？')) return;
+  try {
+    const r = await api({ action: 'deleteRecord', id });
+    if (r.success) { showToast('✓ 已刪除'); loadRecords(); }
+    else showToast('刪除失敗');
+  } catch(e) { showToast('連線錯誤'); }
+}
+
+// ══════════════════════════════════
+// EDIT MODAL
+// ══════════════════════════════════
+function openEdit(id) {
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+  document.getElementById('edit-id').value = rec.id;
+  document.getElementById('edit-artist').value = rec.artist;
+  document.getElementById('edit-date').value = rec.date;
+  document.getElementById('edit-jobname').value = rec.jobName;
+  document.getElementById('edit-income').value = rec.income;
+  document.getElementById('edit-rate').value = rec.rate;
+  document.getElementById('edit-note').value = rec.note;
+  document.getElementById('edit-paymonth').value = rec.payMonth || '';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const artist = document.getElementById('edit-artist').value;
+  const date = document.getElementById('edit-date').value;
+  const jobName = document.getElementById('edit-jobname').value;
+  const income = document.getElementById('edit-income').value;
+  const rate = document.getElementById('edit-rate').value;
+  const note = document.getElementById('edit-note').value;
+  const payMonth = document.getElementById('edit-paymonth').value;
+  try {
+    const r = await api({ action: 'updateRecord', id, artist, date, jobName, income, rate, note, payMonth });
+    if (r.success) { showToast('✓ 已更新'); closeModal(); loadRecords(); }
+    else showToast('更新失敗');
+  } catch(e) { showToast('連線錯誤'); }
+}
+
+// ══════════════════════════════════
+// SETTLEMENT
+// ══════════════════════════════════
+async function generateSettle() {
+  const artistName = document.getElementById('settle-artist').value;
+  const month = document.getElementById('settle-month').value;
+  if (!artistName || !month) { showToast('請選擇藝人和月份'); return; }
+
+  try {
+    const r = await api({ action: 'getRecords', artist: artistName, payMonth: month });
+    if (!r.success) { showToast('載入失敗'); return; }
+    const data = r.data;
+    const artistInfo = artists.find(a => a.name === artistName) || {};
+
+    let totalIncome = 0, totalCompany = 0, totalArtist = 0;
+    data.forEach(rec => {
+      totalIncome += rec.income;
+      totalCompany += rec.companyShare;
+      totalArtist += rec.artistShare;
+    });
+
+    const [year, mon] = month.split('-');
+    document.getElementById('settle-period-label').textContent = `${year} 年 ${parseInt(mon)} 月　發款`;
+    document.getElementById('settle-name').textContent = artistName;
+    document.getElementById('settle-bank').textContent =
+      artistInfo.bankAccount ? `${artistInfo.bankAccount}（${artistInfo.accountName}）` : '— 請填寫帳號 —';
+
+    document.getElementById('settle-tbody').innerHTML = data.length === 0
+      ? `<tr><td colspan="6" class="empty">本月無通告紀錄</td></tr>`
+      : data.map(rec => `
+          <tr>
+            <td class="mono text-muted">${rec.date}</td>
+            <td>${rec.jobName}</td>
+            <td class="text-right mono">${fmtMoney(rec.income)}</td>
+            <td class="text-right mono">${rec.rate}%</td>
+            <td class="text-right mono text-muted">${fmtMoney(rec.companyShare)}</td>
+            <td class="text-right mono text-accent">${fmtMoney(rec.artistShare)}</td>
+          </tr>`).join('');
+
+    document.getElementById('settle-sum-income').textContent = fmtMoney(totalIncome);
+    document.getElementById('settle-sum-company').textContent = fmtMoney(totalCompany);
+    document.getElementById('settle-sum-artist').textContent = fmtMoney(totalArtist);
+    document.getElementById('settle-total').textContent = `NT$ ${fmtMoney(totalArtist)}`;
+
+    document.getElementById('settle-output').style.display = 'block';
+    document.getElementById('settle-output').scrollIntoView({ behavior: 'smooth' });
+  } catch(e) {
+    showToast('連線錯誤');
+  }
+}
+
+// ══════════════════════════════════
+// UTILS
+// ══════════════════════════════════
+function fmtMoney(n) {
+  return Number(n).toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.display = 'none', duration);
+}
+
+function resetApiUrl() {
+  const url = prompt('貼上 Apps Script 部署網址：', API_URL || '');
+  if (url && url.trim()) {
+    API_URL = url.trim();
+    localStorage.setItem('artistApiUrl', API_URL);
+    showToast('✓ 網址已更新，重新連線中...');
+    setTimeout(() => location.reload(), 1000);
+  }
+}
+
+// INIT
+init();
+</script>
+</body>
+</html>
