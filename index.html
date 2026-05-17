@@ -2937,7 +2937,7 @@ function artistOpenEdit(id) {
   const artistOptions = artistList.map(a => `<option value="${a.name}" ${a.name===rec.artist?'selected':''}>${a.name}</option>`).join('');
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);padding:2rem;width:480px;max-width:90vw;border-radius:8px">
       <div style="font-size:1rem;font-weight:600;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border)">編輯通告紀錄</div>
