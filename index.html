@@ -659,6 +659,7 @@
   <button class="nav-btn" onclick="showPage('hr')">HR</button>
   <button class="nav-btn" onclick="showPage('all')">總覽</button>
   <button class="nav-btn" onclick="showPage('accounts')">帳戶</button>
+  <button class="nav-btn" onclick="showPage('artist')">藝人抽成</button>
   <button class="nav-btn" onclick="showPage('settings')">設定</button>
 </div>
 
@@ -792,7 +793,7 @@ function updateAccent() {
 function showPage(page) {
   currentPage = page;
   document.querySelectorAll('.nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['home','entry','ledger','pl','yearly','trend','requisition','receivables','hr','all','accounts','settings'][i] === page);
+    b.classList.toggle('active', ['home','entry','ledger','pl','yearly','trend','requisition','receivables','hr','all','accounts','artist','settings'][i] === page);
   });
   renderPage();
 }
@@ -811,6 +812,7 @@ function renderPage() {
     case 'all':         renderAll(); break;
     case 'accounts':    renderAccounts(); break;
     case 'settings':    renderSettings(); break;
+    case 'artist':      renderArtist(); break;
   }
 }
 
@@ -2682,6 +2684,382 @@ async function printReq(id) {
 
   window.print();
 }
+
+// ============================================================
+// 藝人抽成 (BENSE)
+const ARTIST_API_URL = 'https://script.google.com/macros/s/AKfycbzR-IHeg_am4hV6wxRU0ojM0ukdfvt5Fu2m2-y6kx-QiPSA704gApcpPkMUJhv6Xu9ubQ/exec';
+async function artistApi(params) {
+  const url = new URL(ARTIST_API_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  return res.json();
+}
+// ============================================================
+let artistData = [];
+let artistList = [];
+let artistCurrentTab = 'input'; // input | records | settle
+
+async function renderArtist() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-title" style="color:var(--accent-bense)">本勢娛樂 · 藝人抽成管理</div>
+      <div class="type-toggle" style="margin-bottom:1.2rem">
+        <button class="type-btn ${artistCurrentTab==='input'?'active':'border'}" onclick="artistSwitchTab('input')" style="${artistCurrentTab==='input'?'background:var(--accent-bense);color:#fff;border-color:var(--accent-bense)':''}">＋ 輸入通告</button>
+        <button class="type-btn ${artistCurrentTab==='records'?'active':'border'}" onclick="artistSwitchTab('records')" style="${artistCurrentTab==='records'?'background:var(--accent-bense);color:#fff;border-color:var(--accent-bense)':''}">紀錄查詢</button>
+        <button class="type-btn ${artistCurrentTab==='settle'?'active':'border'}" onclick="artistSwitchTab('settle')" style="${artistCurrentTab==='settle'?'background:var(--accent-bense);color:#fff;border-color:var(--accent-bense)':''}">結算單</button>
+      </div>
+      <div id="artist-content"></div>
+    </div>
+  `;
+  await loadArtistList();
+  artistRenderTab();
+}
+
+function artistSwitchTab(tab) {
+  artistCurrentTab = tab;
+  renderArtist();
+}
+
+async function loadArtistList() {
+  if (artistList.length > 0) return;
+  try {
+    const r = await artistApi({ action: 'getArtists' });
+    if (r.success) artistList = r.data;
+  } catch(e) {}
+}
+
+function artistRenderTab() {
+  if (artistCurrentTab === 'input') artistRenderInput();
+  else if (artistCurrentTab === 'records') artistRenderRecords();
+  else artistRenderSettle();
+}
+
+function artistRenderInput() {
+  const el = document.getElementById('artist-content');
+  const artistOptions = artistList.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">藝人</div>
+        <select id="ai-artist" onchange="artistFillRate()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">
+          <option value="">— 選擇藝人 —</option>
+          ${artistOptions}
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告日期</div>
+        <input type="date" id="ai-date" value="${new Date().toLocaleDateString('sv-SE')}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">
+      </div>
+      <div style="grid-column:1/-1">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告名稱</div>
+        <input type="text" id="ai-jobname" list="ai-jobname-list" placeholder="例：品牌業配、節目錄影" autocomplete="off" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">
+        <datalist id="ai-jobname-list"></datalist>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告費（元）</div>
+        <input type="number" id="ai-income" placeholder="0" oninput="artistCalcPreview()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">公司抽成 %</div>
+        <input type="number" id="ai-rate" placeholder="40" step="0.1" oninput="artistCalcPreview()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">發款月份（選填）</div>
+        <input type="month" id="ai-paymonth" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">備註</div>
+        <input type="text" id="ai-note" placeholder="選填" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">
+      </div>
+      <div style="grid-column:1/-1;background:var(--surface2);border:1px dashed var(--border);border-radius:4px;padding:1rem;display:flex;gap:3rem">
+        <div>
+          <div style="font-size:11px;color:var(--text2)">公司抽成</div>
+          <div id="ai-prev-company" style="font-family:var(--mono);font-size:1.1rem;color:var(--text);margin-top:4px">—</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">藝人實領</div>
+          <div id="ai-prev-artist" style="font-family:var(--mono);font-size:1.3rem;color:var(--accent-bense);margin-top:4px">—</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
+      <button onclick="artistAddRecord()" style="background:var(--accent-bense);color:#fff;border:none;padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">確認新增</button>
+      <button onclick="artistClearForm()" style="background:transparent;color:var(--text2);border:1px solid var(--border);padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">清除</button>
+    </div>
+  `;
+  artistLoadJobNames();
+}
+
+async function artistLoadJobNames() {
+  try {
+    const r = await artistApi({ action: 'getArtistRecords', artist: 'all', month: '', payMonth: '' });
+    if (!r.success) return;
+    const names = [...new Set(r.data.map(rec => rec.jobName).filter(Boolean))];
+    const dl = document.getElementById('ai-jobname-list');
+    if (dl) dl.innerHTML = names.map(n => `<option value="${n}">`).join('');
+  } catch(e) {}
+}
+
+function artistFillRate() {
+  const name = document.getElementById('ai-artist').value;
+  const a = artistList.find(x => x.name === name);
+  if (a) document.getElementById('ai-rate').value = a.defaultRate;
+  artistCalcPreview();
+}
+
+function artistCalcPreview() {
+  const income = parseFloat(document.getElementById('ai-income')?.value) || 0;
+  const rate = parseFloat(document.getElementById('ai-rate')?.value) || 0;
+  const company = Math.round(income * rate / 100);
+  const artist = income - company;
+  const pc = document.getElementById('ai-prev-company');
+  const pa = document.getElementById('ai-prev-artist');
+  if (pc) pc.textContent = income ? fmt(company) : '—';
+  if (pa) pa.textContent = income ? fmt(artist) : '—';
+}
+
+async function artistAddRecord() {
+  const artist = document.getElementById('ai-artist').value;
+  const date = document.getElementById('ai-date').value;
+  const jobName = document.getElementById('ai-jobname').value.trim();
+  const income = document.getElementById('ai-income').value;
+  const rate = document.getElementById('ai-rate').value;
+  const payMonth = document.getElementById('ai-paymonth').value;
+  const note = document.getElementById('ai-note').value.trim();
+  if (!artist || !date || !jobName || !income) { toast('請填寫藝人、日期、通告名稱、金額'); return; }
+  const r = await artistApi({ action: 'addArtistRecord', artist, date, jobName, income, rate, payMonth, note });
+  if (r.success) { toast('✓ 新增成功'); artistClearForm(); artistLoadJobNames(); }
+  else toast('新增失敗：' + r.message);
+}
+
+function artistClearForm() {
+  ['ai-artist','ai-jobname','ai-income','ai-rate','ai-paymonth','ai-note'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('ai-date').value = new Date().toLocaleDateString('sv-SE');
+  const pc = document.getElementById('ai-prev-company');
+  const pa = document.getElementById('ai-prev-artist');
+  if (pc) pc.textContent = '—';
+  if (pa) pa.textContent = '—';
+}
+
+let artistRecords = [];
+
+async function artistRenderRecords() {
+  const el = document.getElementById('artist-content');
+  el.innerHTML = `
+    <div style="display:flex;gap:0.8rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <select id="ar-artist" onchange="artistLoadRecords()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px">
+        <option value="all">全部藝人</option>
+        ${artistList.map(a=>`<option value="${a.name}">${a.name}</option>`).join('')}
+      </select>
+      <input type="month" id="ar-month" onchange="artistLoadRecords()" placeholder="通告月份" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px">
+      <input type="month" id="ar-paymonth" onchange="artistLoadRecords()" placeholder="發款月份" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px">
+      <button onclick="artistClearFilter()" style="background:transparent;color:var(--text2);border:1px solid var(--border);padding:8px 16px;border-radius:4px;cursor:pointer;font-size:13px">清除篩選</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:0.8rem;font-family:var(--mono)">左：通告月份　右：發款月份</div>
+    <div id="ar-table">載入中...</div>
+  `;
+  await artistLoadRecords();
+}
+
+async function artistLoadRecords() {
+  const wrap = document.getElementById('ar-table');
+  if (!wrap) return;
+  wrap.textContent = '載入中...';
+  const artist = document.getElementById('ar-artist')?.value || 'all';
+  const month = document.getElementById('ar-month')?.value || '';
+  const payMonth = document.getElementById('ar-paymonth')?.value || '';
+  const r = await artistApi({ action: 'getArtistRecords', artist, month, payMonth });
+  if (!r.success) { wrap.textContent = '載入失敗'; return; }
+  artistRecords = r.data;
+  if (!artistRecords.length) { wrap.textContent = '無資料'; return; }
+  let totalIncome=0, totalCompany=0, totalArtist=0;
+  artistRecords.forEach(rec => { totalIncome+=rec.income; totalCompany+=rec.companyShare; totalArtist+=rec.artistShare; });
+  wrap.innerHTML = `
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>日期</th><th>藝人</th><th>通告名稱</th>
+        <th style="text-align:right">通告費</th><th style="text-align:right">抽成%</th>
+        <th style="text-align:right">公司抽</th><th style="text-align:right">藝人實領</th>
+        <th>發款月份</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${artistRecords.map(rec=>`
+          <tr>
+            <td style="font-family:var(--mono);color:var(--text2);font-size:12px">${rec.date}</td>
+            <td>${rec.artist}</td>
+            <td>${rec.jobName}</td>
+            <td style="text-align:right;font-family:var(--mono)">${fmt(rec.income)}</td>
+            <td style="text-align:right;font-family:var(--mono)">${rec.rate}%</td>
+            <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${fmt(rec.companyShare)}</td>
+            <td style="text-align:right;font-family:var(--mono);color:var(--accent-bense);font-weight:600">${fmt(rec.artistShare)}</td>
+            <td style="font-family:var(--mono);font-size:12px">${rec.payMonth||'—'}</td>
+            <td style="display:flex;gap:4px">
+              <button onclick="artistOpenEdit('${rec.id}')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px">編輯</button>
+              <button onclick="artistDeleteRecord('${rec.id}')" style="background:transparent;border:1px solid #f87171;color:#f87171;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px">刪除</button>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+      <tfoot><tr style="background:var(--surface2);font-family:var(--mono);font-weight:600">
+        <td colspan="3">合計 ${artistRecords.length} 筆</td>
+        <td style="text-align:right">${fmt(totalIncome)}</td>
+        <td></td>
+        <td style="text-align:right">${fmt(totalCompany)}</td>
+        <td style="text-align:right;color:var(--accent-bense)">${fmt(totalArtist)}</td>
+        <td colspan="2"></td>
+      </tr></tfoot>
+    </table>
+    </div>
+  `;
+}
+
+function artistClearFilter() {
+  const ids = ['ar-month','ar-paymonth'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const a = document.getElementById('ar-artist'); if (a) a.value = 'all';
+  artistLoadRecords();
+}
+
+async function artistDeleteRecord(id) {
+  if (!confirm('確定刪除這筆紀錄？')) return;
+  const r = await artistApi({ action: 'deleteArtistRecord', id });
+  if (r.success) { toast('✓ 已刪除'); artistLoadRecords(); }
+  else toast('刪除失敗');
+}
+
+function artistOpenEdit(id) {
+  const rec = artistRecords.find(r => r.id === id);
+  if (!rec) return;
+  const artistOptions = artistList.map(a => `<option value="${a.name}" ${a.name===rec.artist?'selected':''}>${a.name}</option>`).join('');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);padding:2rem;width:480px;max-width:90vw;border-radius:8px">
+      <div style="font-size:1rem;font-weight:600;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border)">編輯通告紀錄</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">藝人</div><select id="ae-artist" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">${artistOptions}</select></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告日期</div><input type="date" id="ae-date" value="${rec.date}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
+        <div style="grid-column:1/-1"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告名稱</div><input type="text" id="ae-jobname" value="${rec.jobName}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告費</div><input type="number" id="ae-income" value="${rec.income}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">抽成%</div><input type="number" id="ae-rate" value="${rec.rate}" step="0.1" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">發款月份</div><input type="month" id="ae-paymonth" value="${rec.payMonth||''}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">備註</div><input type="text" id="ae-note" value="${rec.note||''}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
+        <button onclick="artistSaveEdit('${rec.id}')" style="background:var(--accent-bense);color:#fff;border:none;padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">儲存</button>
+        <button onclick="this.closest('.modal-overlay').remove()" style="background:transparent;color:var(--text2);border:1px solid var(--border);padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">取消</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function artistSaveEdit(id) {
+  const artist = document.getElementById('ae-artist').value;
+  const date = document.getElementById('ae-date').value;
+  const jobName = document.getElementById('ae-jobname').value;
+  const income = document.getElementById('ae-income').value;
+  const rate = document.getElementById('ae-rate').value;
+  const payMonth = document.getElementById('ae-paymonth').value;
+  const note = document.getElementById('ae-note').value;
+  const r = await artistApi({ action: 'updateArtistRecord', id, artist, date, jobName, income, rate, payMonth, note });
+  if (r.success) { toast('✓ 已更新'); document.querySelector('.modal-overlay').remove(); artistLoadRecords(); }
+  else toast('更新失敗');
+}
+
+function artistRenderSettle() {
+  const el = document.getElementById('artist-content');
+  el.innerHTML = `
+    <div style="display:flex;gap:0.8rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <select id="as-artist" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px">
+        <option value="">— 選擇藝人 —</option>
+        ${artistList.map(a=>`<option value="${a.name}">${a.name}</option>`).join('')}
+      </select>
+      <input type="month" id="as-month" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px">
+      <button onclick="artistGenerateSettle()" style="background:var(--accent-bense);color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:13px">產出結算單</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:1rem;font-family:var(--mono)">依「發款月份」篩選，非通告日期</div>
+    <div id="as-output"></div>
+  `;
+}
+
+async function artistGenerateSettle() {
+  const artistName = document.getElementById('as-artist').value;
+  const month = document.getElementById('as-month').value;
+  if (!artistName || !month) { toast('請選擇藝人和月份'); return; }
+  const r = await artistApi({ action: 'getArtistRecords', artist: artistName, month: '', payMonth: month });
+  if (!r.success) { toast('載入失敗'); return; }
+  const data = r.data;
+  const artistInfo = artistList.find(a => a.name === artistName) || {};
+  let totalIncome=0, totalCompany=0, totalArtist=0;
+  data.forEach(rec => { totalIncome+=rec.income; totalCompany+=rec.companyShare; totalArtist+=rec.artistShare; });
+  const [year, mon] = month.split('-');
+  const output = document.getElementById('as-output');
+  output.innerHTML = `
+    <div id="artist-settle-print" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2rem;margin-bottom:1rem">
+      <div style="text-align:center;margin-bottom:2rem;padding-bottom:1rem;border-bottom:2px solid var(--text)">
+        <div style="font-size:1.3rem;font-weight:700;letter-spacing:0.15em;margin-bottom:0.3rem">通告費結算單</div>
+        <div style="color:var(--text2);font-size:0.85rem;font-family:var(--mono)">${year} 年 ${parseInt(mon)} 月　發款</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:1.5rem;font-size:0.88rem">
+        <div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">ARTIST</div>
+          <div style="font-size:1.1rem;font-weight:600;margin-top:4px">${artistName}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">BANK ACCOUNT</div>
+          <div style="font-family:var(--mono);margin-top:4px">${artistInfo.bankAccount ? artistInfo.bankAccount+'（'+artistInfo.accountName+'）' : '— 請填寫帳號 —'}</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>日期</th><th>通告名稱</th>
+          <th style="text-align:right">通告費</th><th style="text-align:right">抽成%</th>
+          <th style="text-align:right">公司抽成</th><th style="text-align:right">藝人實領</th>
+        </tr></thead>
+        <tbody>
+          ${data.length===0 ? '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text2)">本月無通告紀錄</td></tr>'
+            : data.map(rec=>`<tr>
+              <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${rec.date}</td>
+              <td>${rec.jobName}</td>
+              <td style="text-align:right;font-family:var(--mono)">${fmt(rec.income)}</td>
+              <td style="text-align:right;font-family:var(--mono)">${rec.rate}%</td>
+              <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${fmt(rec.companyShare)}</td>
+              <td style="text-align:right;font-family:var(--mono);color:var(--accent-bense);font-weight:600">${fmt(rec.artistShare)}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot><tr style="background:var(--surface);font-family:var(--mono);font-weight:600">
+          <td colspan="2">合計</td>
+          <td style="text-align:right">${fmt(totalIncome)}</td>
+          <td></td>
+          <td style="text-align:right">${fmt(totalCompany)}</td>
+          <td style="text-align:right;color:var(--accent-bense)">${fmt(totalArtist)}</td>
+        </tr></tfoot>
+      </table>
+      <div style="margin-top:1.5rem;padding:1rem 1.2rem;background:var(--surface);display:flex;justify-content:space-between;align-items:center;border-radius:4px">
+        <span style="color:var(--text2)">本月實際撥款金額</span>
+        <span style="font-family:var(--mono);font-size:1.5rem;color:var(--accent-bense);font-weight:700">NT$ ${fmt(totalArtist)}</span>
+      </div>
+      <div style="margin-top:2.5rem;display:flex;justify-content:flex-end;gap:4rem;font-size:0.85rem">
+        <div style="text-align:center">
+          <div style="color:var(--text2);font-size:11px;font-family:var(--mono);margin-bottom:2rem">公司代表</div>
+          <div style="width:120px;border-bottom:1px solid var(--text)"></div>
+        </div>
+        <div style="text-align:center">
+          <div style="color:var(--text2);font-size:11px;font-family:var(--mono);margin-bottom:2rem">藝人簽名</div>
+          <div style="width:120px;border-bottom:1px solid var(--text)"></div>
+        </div>
+      </div>
+    </div>
+    <button onclick="window.print()" style="background:var(--accent-bense);color:#fff;border:none;padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">列印 / 存成 PDF</button>
+  `;
+}
+
 
 </script>
 </body>
