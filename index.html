@@ -2686,6 +2686,32 @@ async function printReq(id) {
 }
 
 // ============================================================
+// 藝人抽成：建立請款單
+// ============================================================
+async function artistCreateRequisition(artistName, payMonth, totalAmount) {
+  if (!confirm(`確定為 ${artistName} ${payMonth} 建立請款單？\n金額：NT$ ${fmt(totalAmount)}`)) return;
+  const today = new Date().toLocaleDateString('sv-SE');
+  const req = {
+    date: today,
+    unit: 'BENSE',
+    applicant: '劉瑾樺',
+    description: `${artistName} ${payMonth} 通告費經紀抽成`,
+    items: [{ category: '經紀抽成', description: `${artistName} ${payMonth} 藝人實領`, amount: totalAmount }],
+    attachment: '',
+    account: '現金',
+    belongMonth: payMonth
+  };
+  const r = await api({ action: 'addRequisition', req });
+  if (r.success) {
+    toast(`✓ 請款單已建立：${r.id}`);
+    document.getElementById('create-req-btn').textContent = `✓ 已建立 ${r.id}`;
+    document.getElementById('create-req-btn').disabled = true;
+  } else {
+    toast('建立失敗：' + r.message);
+  }
+}
+
+// ============================================================
 // 藝人抽成 (BENSE)
 const ARTIST_API_URL = 'https://script.google.com/macros/s/AKfycbzR-IHeg_am4hV6wxRU0ojM0ukdfvt5Fu2m2-y6kx-QiPSA704gApcpPkMUJhv6Xu9ubQ/exec';
 async function artistApi(params) {
@@ -3009,16 +3035,16 @@ async function artistGenerateSettle() {
     <div id="artist-settle-print" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2rem;margin-bottom:1rem">
       <div style="text-align:center;margin-bottom:2rem;padding-bottom:1rem;border-bottom:2px solid var(--text)">
         <div style="font-size:1.3rem;font-weight:700;letter-spacing:0.15em;margin-bottom:0.3rem">通告費結算單</div>
-        <div style="color:var(--text2);font-size:0.85rem;font-family:var(--mono)">${year} 年 ${parseInt(mon)} 月　發款</div>
+        <div style="color:var(--text2);font-size:0.85rem;font-family:var(--font)">${year} 年 ${parseInt(mon)} 月　發款</div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:1.5rem;font-size:0.88rem">
         <div>
-          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">ARTIST</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--font)">ARTIST</div>
           <div style="font-size:1.1rem;font-weight:600;margin-top:4px">${artistName}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">BANK ACCOUNT</div>
-          <div style="font-family:var(--mono);margin-top:4px">${artistInfo.bankAccount ? artistInfo.bankAccount+'（'+artistInfo.accountName+'）' : '— 請填寫帳號 —'}</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--font)">BANK ACCOUNT</div>
+          <div style="font-family:var(--font);margin-top:4px">${artistInfo.bankAccount ? artistInfo.bankAccount+'（'+artistInfo.accountName+'）' : '— 請填寫帳號 —'}</div>
         </div>
       </div>
       <table>
@@ -3030,12 +3056,12 @@ async function artistGenerateSettle() {
         <tbody>
           ${data.length===0 ? '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text2)">本月無通告紀錄</td></tr>'
             : data.map(rec=>`<tr>
-              <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${rec.date}</td>
+              <td style="font-family:var(--font);font-size:12px;color:var(--text2)">${rec.date}</td>
               <td>${rec.jobName}</td>
-              <td style="text-align:right;font-family:var(--mono)">${fmt(rec.income)}</td>
-              <td style="text-align:right;font-family:var(--mono)">${rec.rate}%</td>
-              <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${fmt(rec.companyShare)}</td>
-              <td style="text-align:right;font-family:var(--mono);color:var(--accent-bense);font-weight:600">${fmt(rec.artistShare)}</td>
+              <td style="text-align:right;font-family:var(--font)">${fmt(rec.income)}</td>
+              <td style="text-align:right;font-family:var(--font)">${rec.rate}%</td>
+              <td style="text-align:right;font-family:var(--font);color:var(--text2)">${fmt(rec.companyShare)}</td>
+              <td style="text-align:right;font-family:var(--font);color:var(--accent-bense);font-weight:600">${fmt(rec.artistShare)}</td>
             </tr>`).join('')}
         </tbody>
         <tfoot><tr style="background:var(--surface);font-family:var(--mono);font-weight:600">
@@ -3062,9 +3088,38 @@ async function artistGenerateSettle() {
       </div>
     </div>
     <button onclick="window.print()" style="background:var(--accent-bense);color:#fff;border:none;padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">列印 / 存成 PDF</button>
+    <button id="create-req-btn" style="background:transparent;color:var(--accent-bense);border:1px solid var(--accent-bense);padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px;margin-left:0.5rem">建立請款單</button>
   `;
+  // 綁定建立請款單按鈕
+  setTimeout(() => {
+    const btn = document.getElementById('create-req-btn');
+    if (btn) btn.onclick = () => artistCreateRequisition(artistName, month, totalArtist);
+  }, 100);
 }
 
+
+async function artistCreateRequisition(artistName, payMonth, totalAmount) {
+  if (!confirm(`確定為 ${artistName} ${payMonth} 建立請款單？\n金額：NT$ ${fmt(totalAmount)}`)) return;
+  const today = new Date().toLocaleDateString('sv-SE');
+  const req = {
+    date: today,
+    unit: 'BENSE',
+    applicant: '劉瑾樺',
+    description: `${artistName} ${payMonth} 通告費經紀抽成`,
+    items: [{ category: '經紀抽成', description: `${artistName} ${payMonth} 藝人實領`, amount: totalAmount }],
+    attachment: '',
+    account: '現金',
+    belongMonth: payMonth
+  };
+  const r = await api({ action: 'addRequisition', req });
+  if (r.success) {
+    toast(`✓ 請款單已建立：${r.id}`);
+    const btn = document.getElementById('create-req-btn');
+    if (btn) { btn.textContent = `✓ 已建立 ${r.id}`; btn.disabled = true; btn.style.opacity = '0.5'; }
+  } else {
+    toast('建立失敗：' + r.message);
+  }
+}
 
 </script>
 </body>
