@@ -2935,24 +2935,29 @@ function artistOpenEdit(id) {
   const rec = artistRecords.find(r => r.id === id);
   if (!rec) return;
   const artistOptions = artistList.map(a => `<option value="${a.name}" ${a.name===rec.artist?'selected':''}>${a.name}</option>`).join('');
+  
+  // 移除舊的 artist modal
+  const existing = document.getElementById('artist-edit-modal');
+  if (existing) existing.remove();
+  
   const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.id = 'artist-edit-modal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);padding:2rem;width:480px;max-width:90vw;border-radius:8px">
-      <div style="font-size:1rem;font-weight:600;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border)">編輯通告紀錄</div>
+    <div style="background:#1a1a1a;border:1px solid #333;padding:2rem;width:480px;max-width:90vw;border-radius:8px;position:relative">
+      <div style="font-size:1rem;font-weight:600;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid #333;color:#f0f0f0">編輯通告紀錄</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
-        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">藝人</div><select id="ae-artist" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px">${artistOptions}</select></div>
-        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告日期</div><input type="date" id="ae-date" value="${rec.date}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
-        <div style="grid-column:1/-1"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告名稱</div><input type="text" id="ae-jobname" value="${rec.jobName}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
-        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">通告費</div><input type="number" id="ae-income" value="${rec.income}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
-        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">抽成%</div><input type="number" id="ae-rate" value="${rec.rate}" step="0.1" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
-        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">發款月份</div><input type="month" id="ae-paymonth" value="${rec.payMonth||''}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
-        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">備註</div><input type="text" id="ae-note" value="${rec.note||''}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">藝人</div><select id="ae-artist" style="width:100%;background:#222;border:1px solid #333;color:#f0f0f0;padding:8px;border-radius:4px;font-size:14px">${artistOptions}</select></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">通告日期</div><input type="date" id="ae-date" value="${rec.date}" style="width:100%;background:#222;border:1px solid #333;color:#f0f0f0;padding:8px;border-radius:4px;font-size:14px"></div>
+        <div style="grid-column:1/-1"><div style="font-size:11px;color:#888;margin-bottom:4px">通告名稱</div><input type="text" id="ae-jobname" value="${rec.jobName}" style="width:100%;background:#222;border:1px solid #333;color:#f0f0f0;padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">通告費</div><input type="number" id="ae-income" value="${rec.income}" style="width:100%;background:#222;border:1px solid #333;color:#f0f0f0;padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">抽成%</div><input type="number" id="ae-rate" value="${rec.rate}" step="0.1" style="width:100%;background:#222;border:1px solid #333;color:#f0f0f0;padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">發款月份</div><input type="month" id="ae-paymonth" value="${rec.payMonth||''}" style="width:100%;background:#222;border:1px solid #333;color:#f0f0f0;padding:8px;border-radius:4px;font-size:14px"></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">備註</div><input type="text" id="ae-note" value="${rec.note||''}" style="width:100%;background:#222;border:1px solid #333;color:#f0f0f0;padding:8px;border-radius:4px;font-size:14px"></div>
       </div>
       <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
-        <button data-id="${rec.id}" onclick="artistSaveEdit(this.dataset.id)" style="background:var(--accent-bense);color:#fff;border:none;padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">儲存</button>
-        <button onclick="this.closest('.modal-overlay').remove()" style="background:transparent;color:var(--text2);border:1px solid var(--border);padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">取消</button>
+        <button data-id="${rec.id}" onclick="artistSaveEdit(this.dataset.id)" style="background:#f542a8;color:#fff;border:none;padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">儲存</button>
+        <button onclick="document.getElementById('artist-edit-modal').remove()" style="background:transparent;color:#888;border:1px solid #333;padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;font-size:14px">取消</button>
       </div>
     </div>
   `;
@@ -2968,7 +2973,7 @@ async function artistSaveEdit(id) {
   const payMonth = document.getElementById('ae-paymonth').value;
   const note = document.getElementById('ae-note').value;
   const r = await artistApi({ action: 'updateArtistRecord', id, artist, date, jobName, income, rate, payMonth, note });
-  if (r.success) { toast('✓ 已更新'); document.querySelector('.modal-overlay').remove(); artistLoadRecords(); }
+  if (r.success) { toast('✓ 已更新'); const m = document.getElementById('artist-edit-modal'); if(m) m.remove(); artistLoadRecords(); }
   else toast('更新失敗');
 }
 
