@@ -2097,6 +2097,57 @@ async function renderHR() {
       </div>
     </div>
 
+    <!-- 國定假日補休 Modal -->
+    <div class="modal-overlay" id="compModal">
+      <div class="modal" style="width:560px">
+        <div class="modal-title">國定假日補休 · <span id="compEmpName"></span></div>
+
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;color:var(--income-color);font-family:var(--mono);margin-bottom:8px">＋ 國定假日上班（取得補休）</div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="flex:1">
+              <label class="form-label">上班日期</label>
+              <input class="form-input" type="date" id="compEarnedDate">
+            </div>
+            <div style="flex:1.5">
+              <label class="form-label">國定假日名稱</label>
+              <input class="form-input" type="text" id="compEarnedNote" placeholder="例：和平紀念日">
+            </div>
+            <button class="btn" onclick="addCompEarned()" style="flex-shrink:0">登記</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;color:var(--expense-color);font-family:var(--mono);margin-bottom:8px">－ 補休使用</div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="flex:1">
+              <label class="form-label">補休日期</label>
+              <input class="form-input" type="date" id="compUsedDate">
+            </div>
+            <div style="flex:1.5">
+              <label class="form-label">備註</label>
+              <input class="form-input" type="text" id="compUsedNote" placeholder="選填">
+            </div>
+            <button class="btn" onclick="addCompUsed()" style="flex-shrink:0">登記</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">記錄</span>
+          <div style="font-family:var(--mono);font-size:13px">
+            已取得 <span id="compEarned" style="color:var(--income-color);font-weight:700">0</span> 天 ／
+            已用 <span id="compUsedTotal" style="color:var(--expense-color);font-weight:700">0</span> 天 ／
+            剩餘 <span id="compLeft" style="color:var(--accent);font-weight:700">0</span> 天
+          </div>
+        </div>
+        <div id="compList" style="max-height:240px;overflow-y:auto"></div>
+
+        <div class="modal-actions">
+          <button class="btn" onclick="closeCompModal()">關閉</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 員工 Modal -->
     <div class="modal-overlay" id="empModal">
       <div class="modal">
@@ -2157,12 +2208,15 @@ async function loadHR() {
     const leaveRes = await api({ action: 'getLeaveRecords', empId: '' });
     const leaveData = leaveRes.success ? leaveRes.data : [];
 
+    const compRes = await api({ action: 'getCompTime', empId: '' });
+    const compData = compRes.success ? compRes.data : [];
+
     content.innerHTML = `
       <div class="tbl-wrap">
         <table>
           <thead><tr>
             <th>姓名</th><th>職稱</th><th>單位</th><th>到職日</th><th>年資</th>
-            <th style="text-align:center">應有特休</th><th style="text-align:center">已使用</th><th style="text-align:center">剩餘</th><th></th>
+            <th style="text-align:center">應有特休</th><th style="text-align:center">已使用</th><th style="text-align:center">剩餘</th><th style="text-align:center">補休剩餘</th><th></th>
           </tr></thead>
           <tbody>
             ${emps.map(e => {
@@ -2170,6 +2224,10 @@ async function loadHR() {
               const usedLeave = leaveData.filter(l => l.empId === e.id).reduce((s,l)=>s+Number(l.days),0);
               const leftLeave = totalLeave - usedLeave;
               const unitColor = UNIT_ACCENT[e.unit] || 'var(--text)';
+              const empCompRecords = compData.filter(c => c.empId === e.id);
+              const compEarned = empCompRecords.filter(c=>c.type==='earned').length;
+              const compUsed = empCompRecords.filter(c=>c.type==='used').length;
+              const compLeft = compEarned - compUsed;
               return `<tr>
                 <td style="font-weight:500">${e.name}</td>
                 <td style="color:var(--text2)">${e.title}</td>
@@ -2179,8 +2237,10 @@ async function loadHR() {
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">${totalLeave}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--expense-color)">${usedLeave}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${leftLeave<=0?'var(--expense-color)':'var(--income-color)'}">${leftLeave}</td>
+                <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${compLeft<=0?'var(--text3)':'var(--accent)'}">${compLeft}</td>
                 <td style="white-space:nowrap">
                   <button class="btn btn-sm" onclick="openLeaveModal('${e.id}','${e.name}',${totalLeave},${usedLeave})">特休記錄</button>
+                  <button class="btn btn-sm" onclick="openCompModal('${e.id}','${e.name}')">國定假日補休</button>
                   <button class="btn btn-sm" onclick='openEmpModal(${JSON.stringify(e).replace(/'/g,"&#39;")})'>編輯</button>
                   <button class="btn btn-sm btn-danger" onclick="deleteEmp('${e.id}')">刪除</button>
                 </td>
@@ -2190,7 +2250,7 @@ async function loadHR() {
         </table>
       </div>
       <div style="margin-top:12px;font-size:11px;color:var(--text3)">
-        ※ 特休依台灣勞基法第38條計算，以今日為基準。
+        ※ 特休依台灣勞基法第38條計算，以今日為基準。補休依國定假日上班登記累積。
       </div>
     `;
   } catch(e) {
@@ -2270,6 +2330,97 @@ async function deleteLeave(id) {
   if (!confirm('確定刪除這筆特休記錄？')) return;
   const res = await api({ action: 'deleteLeaveRecord', id });
   if (res.success) { toast('已刪除', 'ok'); await loadLeaveRecords(); await loadHR(); }
+  else toast(res.message, 'err');
+}
+
+// ============================================================
+// 國定假日補休
+// ============================================================
+let currentCompEmpId = '';
+let currentCompEmpName = '';
+
+async function openCompModal(empId, empName) {
+  currentCompEmpId = empId;
+  currentCompEmpName = empName;
+  document.getElementById('compEmpName').textContent = empName;
+  document.getElementById('compEarnedDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('compEarnedNote').value = '';
+  document.getElementById('compUsedDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('compUsedNote').value = '';
+  document.getElementById('compModal').classList.add('show');
+  await loadCompRecords();
+}
+
+function closeCompModal() {
+  document.getElementById('compModal').classList.remove('show');
+}
+
+async function loadCompRecords() {
+  const list = document.getElementById('compList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
+  try {
+    const res = await api({ action: 'getCompTime', empId: currentCompEmpId });
+    if (!res.success) { list.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    const records = res.data;
+    const earned = records.filter(r=>r.type==='earned').length;
+    const used = records.filter(r=>r.type==='used').length;
+    const left = earned - used;
+
+    document.getElementById('compEarned').textContent = earned;
+    document.getElementById('compUsedTotal').textContent = used;
+    document.getElementById('compLeft').textContent = left;
+    document.getElementById('compLeft').style.color = left <= 0 ? 'var(--text3)' : 'var(--accent)';
+
+    if (records.length === 0) {
+      list.innerHTML = '<div class="empty" style="padding:16px">尚無補休記錄</div>';
+      return;
+    }
+
+    list.innerHTML = records.map(r => {
+      const isEarned = r.type === 'earned';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:6px">
+          <span style="font-size:11px;font-family:var(--mono);color:${isEarned?'var(--income-color)':'var(--expense-color)'};border:1px solid ${isEarned?'var(--income-color)':'var(--expense-color)'};padding:1px 6px;border-radius:4px;white-space:nowrap">${isEarned?'上班':'補休'}</span>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap">${r.date}</div>
+          <div style="flex:1;font-size:13px;color:var(--text2)">${r.note||''}</div>
+          <button onclick="deleteComp('${r.id}')" class="del-row-btn">×</button>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty">載入失敗</div>`;
+  }
+}
+
+async function addCompEarned() {
+  const date = document.getElementById('compEarnedDate').value;
+  const note = document.getElementById('compEarnedNote').value;
+  if (!date) { toast('請選擇上班日期', 'err'); return; }
+  const res = await api({ action: 'addCompTimeEarned', record: { empId: currentCompEmpId, empName: currentCompEmpName, date, note } });
+  if (res.success) {
+    toast('已登記', 'ok');
+    document.getElementById('compEarnedNote').value = '';
+    await loadCompRecords(); await loadHR();
+  } else toast(res.message, 'err');
+}
+
+async function addCompUsed() {
+  const date = document.getElementById('compUsedDate').value;
+  const note = document.getElementById('compUsedNote').value;
+  if (!date) { toast('請選擇補休日期', 'err'); return; }
+  const res = await api({ action: 'addCompTimeUsed', record: { empId: currentCompEmpId, empName: currentCompEmpName, date, note } });
+  if (res.success) {
+    toast('已登記', 'ok');
+    document.getElementById('compUsedNote').value = '';
+    await loadCompRecords(); await loadHR();
+  } else toast(res.message, 'err');
+}
+
+async function deleteComp(id) {
+  if (!confirm('確定刪除這筆記錄？')) return;
+  const res = await api({ action: 'deleteCompTime', id });
+  if (res.success) { toast('已刪除', 'ok'); await loadCompRecords(); await loadHR(); }
   else toast(res.message, 'err');
 }
 
