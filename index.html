@@ -716,7 +716,7 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbxLoM7i7RNtOWBmLg2TKskN2stdhMTluYd3ct41GEEIXXnLjJmse6fb9ymfPA7DsvX3/exec';
 
 const UNIT_NAMES = { STUDIO: '舞蹈教室', CASE: 'CASE（肢體/藝能）', BENSE: '本勢娛樂' };
-const UNIT_ACCENT = { STUDIO: '#c8f542', CASE: '#42c8f5', BENSE: '#f542a8' };
+const UNIT_ACCENT = { STUDIO: '#5a7a10', CASE: '#1a6a8f', BENSE: '#9c2a5a' };
 
 let currentUnit = 'STUDIO';
 let currentPage = 'entry';
@@ -2614,7 +2614,7 @@ async function loadRequisitions(status) {
           <tbody>
             ${reqs.map(r => {
               const total = (r.items||[]).reduce((s,i)=>s+Number(i.amount),0);
-              const statusColor = r.status==='已付款'?'var(--text3)':r.status==='待核准'?'var(--accent)':'var(--text2)';
+              const statusColor = r.status==='已付款'?'var(--text3)':r.status==='待核准'?'#1a5a8a':'var(--text2)';
               const unitName = UNIT_NAMES[r.unit]||r.unit;
               const unitColor = UNIT_ACCENT[r.unit]||'var(--text)';
               return `<tr>
