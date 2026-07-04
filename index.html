@@ -2725,11 +2725,11 @@ async function saveRequisition() {
   if (!req.date || !req.applicant) { toast('日期、請款人為必填', 'err'); return; }
   if (reqItems.length === 0) { toast('請新增至少一筆費用明細', 'err'); return; }
 
-  const action = (editingReq && editingReq.id) ? 'updateRequisition' : 'addRequisition';
-  const toastMsg = (editingReq && editingReq.id) ? '已更新' : `已建立 ${res.id}`;
+  const isUpdate = (editingReq && editingReq.id);
+  const action = isUpdate ? 'updateRequisition' : 'addRequisition';
   const res = await api({ action, req });
   if (res.success) {
-    toast(toastMsg, 'ok');
+    toast(isUpdate ? '已更新' : `已建立 ${res.id}`, 'ok');
     closeReqModal();
     loadRequisitions(currentReqFilter);
   } else toast(res.message, 'err');
