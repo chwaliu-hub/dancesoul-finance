@@ -8,20 +8,20 @@
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
 
   :root {
-    --bg: #0f0f0f;
-    --surface: #181818;
-    --surface2: #222222;
-    --border: #2a2a2a;
-    --accent-studio: #c8f542;   /* 教室 - 螢光黃綠 */
-    --accent-case: #42c8f5;     /* CASE - 電藍 */
-    --accent-bense: #f542a8;    /* 本勢 - 玫瑰粉 */
+    --bg: #f4f4f2;
+    --surface: #ffffff;
+    --surface2: #f0f0ee;
+    --border: #ddddd8;
+    --accent-studio: #7a9a1e;   /* 教室 - 草綠 */
+    --accent-case: #1f7fa8;     /* CASE - 藍 */
+    --accent-bense: #b8336a;    /* 本勢 - 玫紅 */
     --accent: var(--accent-studio);
-    --text: #f0f0f0;
-    --text2: #888;
-    --text3: #555;
-    --income-color: #4ade80;
-    --expense-color: #f87171;
-    --radius: 8px;
+    --text: #1a1a1a;
+    --text2: #5a5a55;
+    --text3: #8a8a85;
+    --income-color: #1f8a4c;
+    --expense-color: #c0392b;
+    --radius: 10px;
     --font: 'Noto Sans TC', sans-serif;
     --mono: 'DM Mono', monospace;
   }
@@ -33,7 +33,7 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   /* ── TOP BAR ── */
@@ -42,7 +42,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    height: 56px;
+    height: 64px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     position: sticky;
@@ -52,7 +52,7 @@
 
   .logo {
     font-family: var(--mono);
-    font-size: 13px;
+    font-size: 15px;
     letter-spacing: 0.15em;
     color: var(--accent);
     text-transform: uppercase;
@@ -71,14 +71,14 @@
     color: var(--text2);
     cursor: pointer;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 500;
     transition: all 0.2s;
     white-space: nowrap;
   }
 
-  .unit-tab.active[data-unit="STUDIO"] { background: var(--accent-studio); color: #000; border-color: var(--accent-studio); }
-  .unit-tab.active[data-unit="CASE"]   { background: var(--accent-case);   color: #000; border-color: var(--accent-case); }
+  .unit-tab.active[data-unit="STUDIO"] { background: var(--accent-studio); color: #fff; border-color: var(--accent-studio); }
+  .unit-tab.active[data-unit="CASE"]   { background: var(--accent-case);   color: #fff; border-color: var(--accent-case); }
   .unit-tab.active[data-unit="BENSE"]  { background: var(--accent-bense);  color: #fff; border-color: var(--accent-bense); }
   .unit-tab:hover:not(.active) { border-color: #444; color: var(--text); }
 
@@ -86,7 +86,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 15px;
     color: var(--text3);
     font-family: var(--mono);
   }
@@ -116,7 +116,7 @@
     color: var(--text2);
     cursor: pointer;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 500;
     transition: all 0.2s;
     white-space: nowrap;
@@ -138,7 +138,7 @@
   }
 
   .card-title {
-    font-size: 11px;
+    font-size: 15px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text2);
@@ -162,7 +162,7 @@
   }
 
   .summary-label {
-    font-size: 11px;
+    font-size: 15px;
     color: var(--text2);
     margin-bottom: 8px;
     font-family: var(--mono);
@@ -187,7 +187,7 @@
     margin-bottom: 20px;
   }
 
-  .month-row label { font-size: 13px; color: var(--text2); }
+  .month-row label { font-size: 15px; color: var(--text2); }
 
   .month-row input[type=month] {
     background: var(--surface2);
@@ -196,7 +196,7 @@
     color: var(--text);
     padding: 6px 12px;
     font-family: var(--mono);
-    font-size: 13px;
+    font-size: 15px;
     cursor: pointer;
   }
 
@@ -208,7 +208,7 @@
     color: var(--text);
     cursor: pointer;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 500;
     transition: all 0.15s;
     white-space: nowrap;
@@ -218,7 +218,7 @@
 
   .btn-primary {
     background: var(--accent);
-    color: #000;
+    color: #fff;
     border-color: var(--accent);
   }
 
@@ -227,7 +227,7 @@
   .btn-danger { color: var(--expense-color); border-color: #3a1c1c; }
   .btn-danger:hover { background: #2a1111; border-color: var(--expense-color); }
 
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-sm { padding: 4px 10px; font-size: 14px; }
 
   /* ── BATCH INPUT ── */
   .batch-header {
@@ -240,7 +240,7 @@
   }
 
   .batch-header span {
-    font-size: 11px;
+    font-size: 15px;
     color: var(--text3);
     font-family: var(--mono);
     letter-spacing: 0.05em;
@@ -263,7 +263,7 @@
     color: var(--text);
     padding: 7px 10px;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 15px;
     width: 100%;
     transition: border-color 0.15s;
   }
@@ -274,7 +274,7 @@
     border-color: var(--accent);
   }
 
-  .batch-row select option { background: #222; }
+  .batch-row select option { background: #fff; }
 
   .del-row-btn {
     width: 32px; height: 32px;
@@ -313,7 +313,7 @@
     color: var(--text2);
     cursor: pointer;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 500;
     transition: all 0.15s;
   }
@@ -327,14 +327,14 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 15px;
   }
 
   thead th {
     text-align: left;
     padding: 10px 12px;
     border-bottom: 1px solid var(--border);
-    font-size: 11px;
+    font-size: 15px;
     color: var(--text3);
     font-family: var(--mono);
     letter-spacing: 0.06em;
@@ -358,7 +358,7 @@
     display: inline-block;
     padding: 2px 8px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 15px;
     background: var(--surface2);
     border: 1px solid var(--border);
     color: var(--text2);
@@ -376,7 +376,7 @@
   }
 
   .pl-section-title {
-    font-size: 12px;
+    font-size: 14px;
     font-family: var(--mono);
     letter-spacing: 0.1em;
     padding: 8px 0;
@@ -392,7 +392,7 @@
     justify-content: space-between;
     padding: 6px 0;
     border-bottom: 1px solid #1a1a1a;
-    font-size: 13px;
+    font-size: 15px;
   }
 
   .pl-row .pl-cat { color: var(--text2); }
@@ -421,7 +421,7 @@
     align-items: center;
   }
 
-  .pl-net-label { font-size: 13px; color: var(--text2); font-family: var(--mono); }
+  .pl-net-label { font-size: 15px; color: var(--text2); font-family: var(--mono); }
   .pl-net-value { font-family: var(--mono); font-size: 24px; font-weight: 700; }
   .pl-net-value.pos { color: var(--income-color); }
   .pl-net-value.neg { color: var(--expense-color); }
@@ -452,7 +452,7 @@
     padding: 6px 10px;
   }
 
-  .cat-item span { flex: 1; font-size: 13px; }
+  .cat-item span { flex: 1; font-size: 15px; }
 
   .cat-item .del-cat {
     background: none; border: none; color: var(--text3);
@@ -475,7 +475,7 @@
     border-radius: 6px;
     color: var(--text);
     padding: 7px 10px;
-    font-size: 13px;
+    font-size: 15px;
     font-family: var(--font);
   }
 
@@ -497,7 +497,7 @@
   }
 
   .unit-card-name {
-    font-size: 11px;
+    font-size: 15px;
     font-family: var(--mono);
     letter-spacing: 0.1em;
     margin-bottom: 12px;
@@ -517,7 +517,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 12px 20px;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--text);
     opacity: 0;
     transform: translateY(8px);
@@ -555,7 +555,7 @@
   #printArea th, #printArea td {
     border: 1px solid #ccc;
     padding: 6px 10px;
-    font-size: 13px;
+    font-size: 15px;
   }
   #printArea th { background: #eee; font-weight: 600; }
 
@@ -564,7 +564,7 @@
     padding: 40px;
     color: var(--text3);
     font-family: var(--mono);
-    font-size: 13px;
+    font-size: 15px;
     gap: 10px;
   }
 
@@ -578,7 +578,7 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .empty { text-align: center; padding: 40px; color: var(--text3); font-family: var(--mono); font-size: 13px; }
+  .empty { text-align: center; padding: 40px; color: var(--text3); font-family: var(--mono); font-size: 15px; }
 
   /* ── PAGINATION ── */
   .pagination {
@@ -586,7 +586,7 @@
     justify-content: flex-end; margin-top: 12px;
   }
 
-  .page-info { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+  .page-info { font-size: 14px; color: var(--text2); font-family: var(--mono); }
 
   /* ── EDIT MODAL ── */
   .modal-overlay {
@@ -615,7 +615,7 @@
   .modal-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
 
   .form-row { margin-bottom: 12px; }
-  .form-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; display: block; font-family: var(--mono); }
+  .form-label { font-size: 15px; color: var(--text2); margin-bottom: 6px; display: block; font-family: var(--mono); }
 
   .form-input {
     width: 100%;
@@ -625,7 +625,7 @@
     color: var(--text);
     padding: 8px 12px;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 15px;
   }
 
   .form-input:focus { outline: none; border-color: var(--accent); }
@@ -837,7 +837,7 @@ function renderEntry() {
         <button class="btn" onclick="addBatchRow()">＋ 新增一列</button>
         <button class="btn" onclick="copyFromLastMonth()" ${currentType==='expense'?'':'style="display:none"'}>複製上個月支出</button>
         <button class="btn btn-primary" onclick="submitBatch()">批次儲存</button>
-        <span id="batchMsg" style="font-size:12px;color:var(--text2);margin-left:8px;"></span>
+        <span id="batchMsg" style="font-size:14px;color:var(--text2);margin-left:8px;"></span>
       </div>
     </div>
   `;
@@ -863,7 +863,7 @@ function addBatchRow() {
   row.className = 'batch-row';
   row.innerHTML = `
     <input type="date" value="${today}" oninput="syncBelongMonth(this)">
-    <input type="month" value="${thisMonth}" style="font-size:12px">
+    <input type="month" value="${thisMonth}" style="font-size:14px">
     <select>${catOptions}</select>
     <input type="text" placeholder="說明">
     <input type="number" placeholder="0" min="0">
@@ -1005,7 +1005,7 @@ async function loadAccountBalance() {
         <div class="pl-net-label">所有帳戶合計</div>
         <div class="pl-net-value ${totalBalance >= 0 ? 'pos' : 'neg'}">${totalBalance >= 0 ? '' : '-'}${fmt(Math.abs(totalBalance))}</div>
       </div>
-      <div style="margin-top:12px;font-size:12px;color:var(--text3)">※ 餘額 = 初始餘額 + 所有收入 − 所有支出（三個單位合計）</div>
+      <div style="margin-top:12px;font-size:14px;color:var(--text3)">※ 餘額 = 初始餘額 + 所有收入 − 所有支出（三個單位合計）</div>
     `;
   } catch (e) {
     content.innerHTML = `<div class="empty">載入失敗：${e.message}</div>`;
@@ -1096,7 +1096,7 @@ async function loadLedger() {
 
     content.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:12px;color:var(--text2)">共 <b style="color:var(--text)">${records.length}</b> 筆</div>
+        <div style="font-size:14px;color:var(--text2)">共 <b style="color:var(--text)">${records.length}</b> 筆</div>
         <div style="font-family:var(--mono);font-size:14px" class="${typeClass}">合計：${fmt(totalAmount)}</div>
       </div>
       <div class="tbl-wrap">
@@ -1313,7 +1313,7 @@ async function loadAll2() {
       <div class="pl-net-bar" style="margin-top:0">
         <div>
           <div class="pl-net-label">三單位合計 ${currentYear}年${currentMonth}月</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px;font-family:var(--mono)">
+          <div style="font-size:14px;color:var(--text2);margin-top:4px;font-family:var(--mono)">
             收入 ${fmt(d.grandIncome)} ／ 支出 ${fmt(d.grandExpense)}
           </div>
         </div>
@@ -1346,8 +1346,8 @@ function renderSettings() {
     </div>
     <div class="card" style="margin-top:0">
       <div class="card-title">API 設定</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">目前 API_URL：<span style="font-family:var(--mono);color:var(--text)">${API_URL || '(未設定)'}</span></div>
-      <div style="font-size:12px;color:var(--text2)">若要修改，請直接編輯 HTML 檔案中的 <span style="font-family:var(--mono)">API_URL</span> 變數。</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:8px">目前 API_URL：<span style="font-family:var(--mono);color:var(--text)">${API_URL || '(未設定)'}</span></div>
+      <div style="font-size:14px;color:var(--text2)">若要修改，請直接編輯 HTML 檔案中的 <span style="font-family:var(--mono)">API_URL</span> 變數。</div>
     </div>
   `;
   renderAccountsList();
@@ -1404,10 +1404,10 @@ function renderAccountsList() {
   list.innerHTML = accounts.map((a, i) => `
     <div class="cat-item">
       <span>${a.name}</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2)">${fmt(a.balance)}</span>
+      <span style="font-family:var(--mono);font-size:14px;color:var(--text2)">${fmt(a.balance)}</span>
       <button class="del-cat" onclick="deleteAccount(${i})">×</button>
     </div>
-  `).join('') || '<div style="color:var(--text3);font-size:13px;padding:8px 0">尚無帳戶</div>';
+  `).join('') || '<div style="color:var(--text3);font-size:15px;padding:8px 0">尚無帳戶</div>';
 }
 
 function addAccount() {
@@ -1462,9 +1462,9 @@ async function renderHome() {
           <div class="card-title">待辦事項</div>
           <div style="display:flex;gap:8px;margin-bottom:16px">
             <input type="text" id="todoInput" placeholder="新增待辦..."
-              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-family:var(--font);font-size:13px"
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-family:var(--font);font-size:15px"
               onkeydown="if(event.key==='Enter')addTodoItem()">
-            <select id="todoPriority" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;font-size:12px">
+            <select id="todoPriority" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;font-size:14px">
               <option>一般</option>
               <option>重要</option>
               <option>緊急</option>
@@ -1498,8 +1498,8 @@ async function loadHomeSummary(y, m) {
           const unitColor = UNIT_ACCENT[u];
           return `
             <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
-              <div style="font-size:12px;color:${unitColor};font-family:var(--mono);width:80px;white-space:nowrap">${UNIT_NAMES[u]}</div>
-              <div style="flex:1;display:flex;gap:16px;font-size:12px;font-family:var(--mono)">
+              <div style="font-size:14px;color:${unitColor};font-family:var(--mono);width:80px;white-space:nowrap">${UNIT_NAMES[u]}</div>
+              <div style="flex:1;display:flex;gap:16px;font-size:14px;font-family:var(--mono)">
                 <span style="color:var(--income-color)">↑ ${fmt(s.totalIncome)}</span>
                 <span style="color:var(--expense-color)">↓ ${fmt(s.totalExpense)}</span>
               </div>
@@ -1508,7 +1508,7 @@ async function loadHomeSummary(y, m) {
           `;
         }).join('')}
         <div style="display:flex;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--border);margin-top:4px">
-          <span style="font-size:12px;color:var(--text2)">三單位合計淨損益</span>
+          <span style="font-size:14px;color:var(--text2)">三單位合計淨損益</span>
           <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:${d.grandNet>=0?'var(--income-color)':'var(--expense-color)'}">${d.grandNet>=0?'+':''}${fmt(d.grandNet)}</span>
         </div>
       </div>
@@ -1556,7 +1556,7 @@ async function loadHomeAlerts() {
     }
 
     if (alerts.length === 0) {
-      content.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:4px 0">目前沒有待處理事項 ✓</div>';
+      content.innerHTML = '<div style="color:var(--text3);font-size:15px;padding:4px 0">目前沒有待處理事項 ✓</div>';
       return;
     }
 
@@ -1565,10 +1565,10 @@ async function loadHomeAlerts() {
         onmouseover="this.style.borderColor='${a.color}'" onmouseout="this.style.borderColor='var(--border)'">
         <span style="font-size:18px">${a.icon}</span>
         <div style="flex:1">
-          <div style="font-size:13px;color:${a.color};font-weight:500">${a.text}</div>
-          ${a.sub ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${a.sub}</div>` : ''}
+          <div style="font-size:15px;color:${a.color};font-weight:500">${a.text}</div>
+          ${a.sub ? `<div style="font-size:15px;color:var(--text3);margin-top:2px">${a.sub}</div>` : ''}
         </div>
-        <span style="color:var(--text3);font-size:12px">→</span>
+        <span style="color:var(--text3);font-size:14px">→</span>
       </div>
     `).join('');
   } catch(e) {
@@ -1609,7 +1609,7 @@ function renderTodoList() {
       <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo('${t.id}',this.checked)"
         style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
       <div style="flex:1">
-        <div style="font-size:13px;${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.text}</div>
+        <div style="font-size:15px;${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.text}</div>
         <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
           ${priorityBadge(t.priority)}
           <span style="font-size:10px;color:var(--text3)">${t.createdAt}</span>
@@ -1620,9 +1620,9 @@ function renderTodoList() {
   `;
 
   content.innerHTML = `
-    ${pending.length === 0 ? '<div style="color:var(--text3);font-size:13px;padding:8px 0;text-align:center">所有待辦都完成了 ✓</div>' : pending.map(renderItem).join('')}
+    ${pending.length === 0 ? '<div style="color:var(--text3);font-size:15px;padding:8px 0;text-align:center">所有待辦都完成了 ✓</div>' : pending.map(renderItem).join('')}
     ${done.length > 0 ? `
-      <div style="font-size:11px;color:var(--text3);margin:12px 0 8px;font-family:var(--mono);letter-spacing:0.06em">已完成（${done.length}）</div>
+      <div style="font-size:15px;color:var(--text3);margin:12px 0 8px;font-family:var(--mono);letter-spacing:0.06em">已完成（${done.length}）</div>
       ${done.map(renderItem).join('')}
     ` : ''}
   `;
@@ -1688,7 +1688,7 @@ async function renderYearly() {
       <div class="card-title">${UNIT_NAMES[currentUnit]} · 年度損益表</div>
       <div class="month-row">
         <label>年度</label>
-        <select id="yearlyYear" onchange="loadYearly()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+        <select id="yearlyYear" onchange="loadYearly()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:15px">
           ${[2026,2025,2024,2023].map(y => `<option ${y===currentYear?'selected':''}>${y}</option>`).join('')}
         </select>
       </div>
@@ -1716,9 +1716,9 @@ async function loadYearly() {
       const netClass = s.netProfit >= 0 ? 'income' : 'expense';
       return `
         <td style="text-align:right;padding:8px 10px;border-right:1px solid var(--border)">
-          <div style="font-family:var(--mono);font-size:11px;color:var(--income-color)">${fmt(s.totalIncome)}</div>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--expense-color)">${fmt(s.totalExpense)}</div>
-          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--${netClass}-color);margin-top:2px;border-top:1px solid var(--border);padding-top:2px">${s.netProfit>=0?'+':''}${fmt(s.netProfit)}</div>
+          <div style="font-family:var(--mono);font-size:15px;color:var(--income-color)">${fmt(s.totalIncome)}</div>
+          <div style="font-family:var(--mono);font-size:15px;color:var(--expense-color)">${fmt(s.totalExpense)}</div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--${netClass}-color);margin-top:2px;border-top:1px solid var(--border);padding-top:2px">${s.netProfit>=0?'+':''}${fmt(s.netProfit)}</div>
         </td>`;
     }).join('');
 
@@ -1726,18 +1726,18 @@ async function loadYearly() {
     const expRows = d.expenseCategories.map(cat => {
       const cells = months.map(m => {
         const val = d.months[m].expenseByCategory[cat] || 0;
-        return `<td style="text-align:right;padding:6px 10px;font-family:var(--mono);font-size:12px;color:${val?'var(--expense-color)':'var(--text3)'};border-right:1px solid var(--border)">${val?fmt(val):'—'}</td>`;
+        return `<td style="text-align:right;padding:6px 10px;font-family:var(--mono);font-size:14px;color:${val?'var(--expense-color)':'var(--text3)'};border-right:1px solid var(--border)">${val?fmt(val):'—'}</td>`;
       }).join('');
-      return `<tr><td style="padding:6px 12px;color:var(--text2);font-size:12px;border-right:1px solid var(--border);white-space:nowrap">${cat}</td>${cells}</tr>`;
+      return `<tr><td style="padding:6px 12px;color:var(--text2);font-size:14px;border-right:1px solid var(--border);white-space:nowrap">${cat}</td>${cells}</tr>`;
     }).join('');
 
     // 收入各科目列
     const incRows = d.incomeCategories.map(cat => {
       const cells = months.map(m => {
         const val = d.months[m].incomeByCategory[cat] || 0;
-        return `<td style="text-align:right;padding:6px 10px;font-family:var(--mono);font-size:12px;color:${val?'var(--income-color)':'var(--text3)'};border-right:1px solid var(--border)">${val?fmt(val):'—'}</td>`;
+        return `<td style="text-align:right;padding:6px 10px;font-family:var(--mono);font-size:14px;color:${val?'var(--income-color)':'var(--text3)'};border-right:1px solid var(--border)">${val?fmt(val):'—'}</td>`;
       }).join('');
-      return `<tr><td style="padding:6px 12px;color:var(--text2);font-size:12px;border-right:1px solid var(--border);white-space:nowrap">${cat}</td>${cells}</tr>`;
+      return `<tr><td style="padding:6px 12px;color:var(--text2);font-size:14px;border-right:1px solid var(--border);white-space:nowrap">${cat}</td>${cells}</tr>`;
     }).join('');
 
     content.innerHTML = `
@@ -1745,23 +1745,23 @@ async function loadYearly() {
         <table style="border-collapse:collapse;min-width:900px">
           <thead>
             <tr style="background:var(--surface2)">
-              <th style="padding:10px 12px;text-align:left;font-size:11px;color:var(--text3);border-right:1px solid var(--border);white-space:nowrap;min-width:100px">科目</th>
-              ${mLabels.map(l=>`<th style="padding:10px 8px;text-align:right;font-size:11px;color:var(--text3);border-right:1px solid var(--border);min-width:80px">${l}</th>`).join('')}
+              <th style="padding:10px 12px;text-align:left;font-size:15px;color:var(--text3);border-right:1px solid var(--border);white-space:nowrap;min-width:100px">科目</th>
+              ${mLabels.map(l=>`<th style="padding:10px 8px;text-align:right;font-size:15px;color:var(--text3);border-right:1px solid var(--border);min-width:80px">${l}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
-            <tr style="background:#1a2a1a">
-              <td style="padding:8px 12px;font-size:11px;color:var(--income-color);font-family:var(--mono);letter-spacing:0.08em;border-right:1px solid var(--border)">▸ 收入</td>
+            <tr style="background:#eaf5ee">
+              <td style="padding:8px 12px;font-size:15px;color:var(--income-color);font-family:var(--mono);letter-spacing:0.08em;border-right:1px solid var(--border)">▸ 收入</td>
               ${months.map(()=>`<td style="border-right:1px solid var(--border)"></td>`).join('')}
             </tr>
             ${incRows}
-            <tr style="background:#2a1a1a">
-              <td style="padding:8px 12px;font-size:11px;color:var(--expense-color);font-family:var(--mono);letter-spacing:0.08em;border-right:1px solid var(--border)">▸ 支出</td>
+            <tr style="background:#fdecea">
+              <td style="padding:8px 12px;font-size:15px;color:var(--expense-color);font-family:var(--mono);letter-spacing:0.08em;border-right:1px solid var(--border)">▸ 支出</td>
               ${months.map(()=>`<td style="border-right:1px solid var(--border)"></td>`).join('')}
             </tr>
             ${expRows}
             <tr style="background:var(--surface2);border-top:2px solid var(--border)">
-              <td style="padding:8px 12px;font-size:12px;font-weight:700;border-right:1px solid var(--border)">月淨損益</td>
+              <td style="padding:8px 12px;font-size:14px;font-weight:700;border-right:1px solid var(--border)">月淨損益</td>
               ${summaryRow}
             </tr>
           </tbody>
@@ -1786,14 +1786,14 @@ async function renderTrend() {
       <div class="card-title">${UNIT_NAMES[currentUnit]} · 科目月趨勢</div>
       <div class="month-row">
         <label>年度</label>
-        <select id="trendYear" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+        <select id="trendYear" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:15px">
           ${[2026,2025,2024,2023].map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('')}
         </select>
-        <select id="trendType" onchange="updateTrendCats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+        <select id="trendType" onchange="updateTrendCats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:15px">
           <option value="expense">支出</option>
           <option value="income">收入</option>
         </select>
-        <select id="trendCat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:13px">
+        <select id="trendCat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:6px 12px;font-family:var(--mono);font-size:15px">
           ${(cats.expense||[]).map(c=>`<option>${c}</option>`).join('')}
         </select>
         <button class="btn btn-primary" onclick="loadTrend()">查詢</button>
@@ -1831,8 +1831,8 @@ async function loadTrend() {
 
     content.innerHTML = `
       <div style="margin-bottom:12px;display:flex;gap:24px">
-        <div><span style="font-size:11px;color:var(--text2)">年度合計</span><div style="font-family:var(--mono);font-size:18px;color:${color}">${fmt(total)}</div></div>
-        <div><span style="font-size:11px;color:var(--text2)">月平均</span><div style="font-family:var(--mono);font-size:18px;color:var(--text)">${fmt(Math.round(avg))}</div></div>
+        <div><span style="font-size:15px;color:var(--text2)">年度合計</span><div style="font-family:var(--mono);font-size:18px;color:${color}">${fmt(total)}</div></div>
+        <div><span style="font-size:15px;color:var(--text2)">月平均</span><div style="font-family:var(--mono);font-size:18px;color:var(--text)">${fmt(Math.round(avg))}</div></div>
       </div>
       <div style="display:flex;align-items:flex-end;gap:8px;height:200px;padding:0 4px">
         ${data.map((d,i) => {
@@ -1952,10 +1952,10 @@ async function loadReceivables(filter) {
               return `<tr>
                 <td style="font-weight:500">${r.counterpart}</td>
                 <td style="color:var(--text2)">${r.description}</td>
-                <td style="font-family:var(--mono);font-size:12px;color:${isOverdue?'var(--expense-color)':'var(--text2)'}">${r.dueDate||'—'}${isOverdue?' ⚠':''}
+                <td style="font-family:var(--mono);font-size:14px;color:${isOverdue?'var(--expense-color)':'var(--text2)'}">${r.dueDate||'—'}${isOverdue?' ⚠':''}
                 </td>
                 <td style="text-align:right;font-family:var(--mono);color:${color}">${fmt(r.amount)}</td>
-                <td><span style="font-size:12px;color:${statusColor}">${r.status}</span></td>
+                <td><span style="font-size:14px;color:${statusColor}">${r.status}</span></td>
                 <td style="white-space:nowrap">
                   <button class="btn btn-sm" onclick='openReceivableModal(${JSON.stringify(r).replace(/'/g,"&#39;")})'>編輯</button>
                   <button class="btn btn-sm btn-danger" onclick="deleteRec2('${r.id}')">刪除</button>
@@ -2086,8 +2086,8 @@ async function renderHR() {
           <button class="btn btn-primary" onclick="addLeave()" style="flex-shrink:0">新增</button>
         </div>
         <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">使用記錄</span>
-          <div style="font-family:var(--mono);font-size:13px">
+          <span style="font-size:15px;color:var(--text2);font-family:var(--mono)">使用記錄</span>
+          <div style="font-family:var(--mono);font-size:15px">
             應有 <span id="leaveTotal" style="color:var(--accent);font-weight:700">0</span> 天 ／
             已用 <span id="leaveUsed" style="color:var(--expense-color);font-weight:700">0</span> 天 ／
             剩餘 <span id="leaveLeft" style="color:var(--income-color);font-weight:700">0</span> 天
@@ -2106,7 +2106,7 @@ async function renderHR() {
         <div class="modal-title">國定假日補休 · <span id="compEmpName"></span></div>
 
         <div style="margin-bottom:16px">
-          <div style="font-size:11px;color:var(--income-color);font-family:var(--mono);margin-bottom:8px">＋ 國定假日上班（取得補休）</div>
+          <div style="font-size:15px;color:var(--income-color);font-family:var(--mono);margin-bottom:8px">＋ 國定假日上班（取得補休）</div>
           <div style="display:flex;gap:8px;align-items:flex-end">
             <div style="flex:1">
               <label class="form-label">上班日期</label>
@@ -2121,7 +2121,7 @@ async function renderHR() {
         </div>
 
         <div style="margin-bottom:16px">
-          <div style="font-size:11px;color:var(--expense-color);font-family:var(--mono);margin-bottom:8px">－ 補休使用</div>
+          <div style="font-size:15px;color:var(--expense-color);font-family:var(--mono);margin-bottom:8px">－ 補休使用</div>
           <div style="display:flex;gap:8px;align-items:flex-end">
             <div style="flex:1">
               <label class="form-label">補休日期</label>
@@ -2136,8 +2136,8 @@ async function renderHR() {
         </div>
 
         <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">記錄</span>
-          <div style="font-family:var(--mono);font-size:13px">
+          <span style="font-size:15px;color:var(--text2);font-family:var(--mono)">記錄</span>
+          <div style="font-family:var(--mono);font-size:15px">
             已取得 <span id="compEarned" style="color:var(--income-color);font-weight:700">0</span> 天 ／
             已用 <span id="compUsedTotal" style="color:var(--expense-color);font-weight:700">0</span> 天 ／
             剩餘 <span id="compLeft" style="color:var(--accent);font-weight:700">0</span> 天
@@ -2234,9 +2234,9 @@ async function loadHR() {
               return `<tr>
                 <td style="font-weight:500">${e.name}</td>
                 <td style="color:var(--text2)">${e.title}</td>
-                <td><span style="font-size:11px;color:${unitColor};font-family:var(--mono)">${UNIT_NAMES[e.unit]||e.unit}</span></td>
-                <td style="font-family:var(--mono);font-size:12px">${e.startDate}</td>
-                <td style="font-size:12px;color:var(--text2)">${calcSeniority(e.startDate)}</td>
+                <td><span style="font-size:15px;color:${unitColor};font-family:var(--mono)">${UNIT_NAMES[e.unit]||e.unit}</span></td>
+                <td style="font-family:var(--mono);font-size:14px">${e.startDate}</td>
+                <td style="font-size:14px;color:var(--text2)">${calcSeniority(e.startDate)}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">${totalLeave}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--expense-color)">${usedLeave}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${leftLeave<=0?'var(--expense-color)':'var(--income-color)'}">${leftLeave}</td>
@@ -2252,7 +2252,7 @@ async function loadHR() {
           </tbody>
         </table>
       </div>
-      <div style="margin-top:12px;font-size:11px;color:var(--text3)">
+      <div style="margin-top:12px;font-size:15px;color:var(--text3)">
         ※ 特休依台灣勞基法第38條計算，以今日為基準。補休依國定假日上班登記累積。
       </div>
     `;
@@ -2302,9 +2302,9 @@ async function loadLeaveRecords() {
 
     list.innerHTML = records.map(r => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:6px">
-        <div style="font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap">${r.date}</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--text2);white-space:nowrap">${r.date}</div>
         <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--expense-color);white-space:nowrap">${r.days}天</div>
-        <div style="flex:1;font-size:13px;color:var(--text2)">${r.note||''}</div>
+        <div style="flex:1;font-size:15px;color:var(--text2)">${r.note||''}</div>
         <button onclick="deleteLeave('${r.id}')" class="del-row-btn">×</button>
       </div>
     `).join('');
@@ -2384,9 +2384,9 @@ async function loadCompRecords() {
       const isEarned = r.type === 'earned';
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:6px">
-          <span style="font-size:11px;font-family:var(--mono);color:${isEarned?'var(--income-color)':'var(--expense-color)'};border:1px solid ${isEarned?'var(--income-color)':'var(--expense-color)'};padding:1px 6px;border-radius:4px;white-space:nowrap">${isEarned?'上班':'補休'}</span>
-          <div style="font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap">${r.date}</div>
-          <div style="flex:1;font-size:13px;color:var(--text2)">${r.note||''}</div>
+          <span style="font-size:15px;font-family:var(--mono);color:${isEarned?'var(--income-color)':'var(--expense-color)'};border:1px solid ${isEarned?'var(--income-color)':'var(--expense-color)'};padding:1px 6px;border-radius:4px;white-space:nowrap">${isEarned?'上班':'補休'}</span>
+          <div style="font-family:var(--mono);font-size:14px;color:var(--text2);white-space:nowrap">${r.date}</div>
+          <div style="flex:1;font-size:15px;color:var(--text2)">${r.note||''}</div>
           <button onclick="deleteComp('${r.id}')" class="del-row-btn">×</button>
         </div>
       `;
@@ -2528,13 +2528,13 @@ async function renderRequisition() {
         <!-- 費用明細 -->
         <div style="margin:16px 0 8px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:11px;color:var(--text2);font-family:var(--mono);letter-spacing:0.08em">費用明細</span>
+            <span style="font-size:15px;color:var(--text2);font-family:var(--mono);letter-spacing:0.08em">費用明細</span>
             <button class="btn btn-sm" onclick="addReqItem()">＋ 新增項目</button>
           </div>
           <div style="display:grid;grid-template-columns:150px 1fr 100px 32px;gap:6px;margin-bottom:6px">
-            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">科目</span>
-            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">說明</span>
-            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">金額</span>
+            <span style="font-size:15px;color:var(--text3);font-family:var(--mono)">科目</span>
+            <span style="font-size:15px;color:var(--text3);font-family:var(--mono)">說明</span>
+            <span style="font-size:15px;color:var(--text3);font-family:var(--mono)">金額</span>
             <span></span>
           </div>
           <div id="reqItems"></div>
@@ -2566,7 +2566,7 @@ async function renderRequisition() {
           <label class="form-label">付款帳戶</label>
           <select class="form-input" id="approveAccount"></select>
         </div>
-        <div style="font-size:12px;color:var(--text2);margin:12px 0;padding:10px;background:var(--surface2);border-radius:var(--radius)">
+        <div style="font-size:14px;color:var(--text2);margin:12px 0;padding:10px;background:var(--surface2);border-radius:var(--radius)">
           核准後將自動寫入支出明細，此操作無法復原。
         </div>
         <div class="modal-actions">
@@ -2618,16 +2618,17 @@ async function loadRequisitions(status) {
               const unitName = UNIT_NAMES[r.unit]||r.unit;
               const unitColor = UNIT_ACCENT[r.unit]||'var(--text)';
               return `<tr>
-                <td style="font-family:var(--mono);font-size:12px">${r.id}</td>
-                <td style="font-family:var(--mono);font-size:12px">${r.date}</td>
-                <td><span style="font-size:11px;color:${unitColor}">${unitName}</span></td>
+                <td style="font-family:var(--mono);font-size:14px">${r.id}</td>
+                <td style="font-family:var(--mono);font-size:14px">${r.date}</td>
+                <td><span style="font-size:15px;color:${unitColor}">${unitName}</span></td>
                 <td>${r.applicant}</td>
                 <td style="color:var(--text2)">${r.description}</td>
                 <td style="text-align:right;font-family:var(--mono);color:var(--expense-color)">${fmt(total)}</td>
-                <td><span style="font-size:12px;color:${statusColor};font-weight:500">${r.status}</span></td>
-                <td style="font-family:var(--mono);font-size:12px;color:var(--text3)">${r.payDate||'—'}</td>
+                <td><span style="font-size:14px;color:${statusColor};font-weight:500">${r.status}</span></td>
+                <td style="font-family:var(--mono);font-size:14px;color:var(--text3)">${r.payDate||'—'}</td>
                 <td style="white-space:nowrap;display:flex;gap:4px">
                   <button class="btn btn-sm" onclick="printReq('${r.id}')">列印</button>
+                  <button class="btn btn-sm" onclick="copyReq('${r.id}')">複製</button>
                   ${r.status==='待核准'?`
                     <button class="btn btn-sm" onclick='openEditReq(${JSON.stringify(r).replace(/'/g,"&#39;")})'>編輯</button>
                     <button class="btn btn-sm btn-primary" onclick="openApproveModal('${r.id}')">核准付款</button>
@@ -2686,18 +2687,18 @@ function renderReqItems() {
 
   container.innerHTML = reqItems.map((item, i) => `
     <div style="display:grid;grid-template-columns:150px 1fr 100px 32px;gap:6px;margin-bottom:6px;align-items:center">
-      <select onchange="reqItems[${i}].category=this.value" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px">
+      <select onchange="reqItems[${i}].category=this.value" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px">
         ${cats.map(c=>`<option ${c===item.category?'selected':''}>${c}</option>`).join('')}
       </select>
       <input type="text" value="${item.description}" placeholder="說明"
         oninput="reqItems[${i}].description=this.value"
-        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px">
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px">
       <input type="number" value="${item.amount||''}" placeholder="0"
         oninput="reqItems[${i}].amount=parseFloat(this.value)||0;updateReqTotal()"
-        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px">
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px">
       <button onclick="reqItems.splice(${i},1);renderReqItems()" class="del-row-btn">×</button>
     </div>
-  `).join('') || '<div style="color:var(--text3);font-size:12px;padding:8px 0">尚無項目，請按「新增項目」</div>';
+  `).join('') || '<div style="color:var(--text3);font-size:14px;padding:8px 0">尚無項目，請按「新增項目」</div>';
 
   updateReqTotal();
 }
@@ -2738,6 +2739,28 @@ async function deleteReq(id) {
   const res = await api({ action: 'deleteRequisition', id });
   if (res.success) { toast('已刪除', 'ok'); loadRequisitions(currentReqFilter); }
   else toast(res.message, 'err');
+}
+
+async function copyReq(id) {
+  const res = await api({ action: 'getRequisitions', unit: '', status: '' });
+  if (!res.success) return;
+  const original = res.data.find(r => r.id === id);
+  if (!original) return;
+
+  // 用今天日期、本月歸屬月份，其餘照抄
+  const today = new Date().toISOString().split('T')[0];
+  const thisMonth = today.substring(0, 7);
+
+  const copy = {
+    ...original,
+    id: null,
+    date: today,
+    belongMonth: thisMonth,
+    status: null
+  };
+
+  openReqModal(copy);
+  toast('已複製，請確認內容後儲存', 'ok');
 }
 
 // 核准付款
@@ -2782,7 +2805,7 @@ async function printReq(id) {
     <div style="max-width:700px;margin:0 auto;font-family:'Noto Sans TC',sans-serif;color:#000;padding:32px">
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:22px;font-weight:700;letter-spacing:0.1em">請 款 單</div>
-        <div style="font-size:13px;color:#000;margin-top:4px">DanceSoul 靈動力肢體開發有限公司</div>
+        <div style="font-size:15px;color:#000;margin-top:4px">DanceSoul 靈動力肢體開發有限公司</div>
       </div>
       <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
         <tr>
@@ -2827,9 +2850,9 @@ async function printReq(id) {
       ${req.attachment ? `<div style="margin-bottom:20px"><span style="font-weight:600">附件：</span>${req.attachment}</div>` : ''}
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px">
-        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:13px">請款人</div>
-        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:13px">主管核准</div>
-        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:13px">財務確認</div>
+        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:15px">請款人</div>
+        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:15px">主管核准</div>
+        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:15px">財務確認</div>
       </div>
     </div>
   `;
