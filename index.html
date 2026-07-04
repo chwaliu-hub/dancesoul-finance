@@ -2747,16 +2747,19 @@ async function copyReq(id) {
   const original = res.data.find(r => r.id === id);
   if (!original) return;
 
-  // 用今天日期、本月歸屬月份，其餘照抄
   const today = new Date().toISOString().split('T')[0];
   const thisMonth = today.substring(0, 7);
 
+  // 明確建立新物件，不帶舊id
   const copy = {
-    ...original,
     id: null,
     date: today,
     belongMonth: thisMonth,
-    status: null
+    unit: original.unit,
+    applicant: original.applicant,
+    items: JSON.parse(JSON.stringify(original.items || [])),
+    attachment: original.attachment,
+    account: original.account
   };
 
   openReqModal(copy);
