@@ -2484,6 +2484,7 @@ async function renderRequisition() {
         <div class="card-title">請款單</div>
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-primary" onclick="openReqModal()">＋ 新增請款單</button>
+        <button class="btn" onclick="printBlankReq()">列印空白範本</button>
           <div class="type-toggle" style="margin-bottom:0">
             <button class="type-btn active income" id="rqtab-all"    onclick="loadRequisitions('')">全部</button>
             <button class="type-btn" id="rqtab-pending" onclick="loadRequisitions('待核准')">待核准</button>
@@ -2791,6 +2792,72 @@ async function confirmApprove() {
     closeApproveModal();
     loadRequisitions(currentReqFilter);
   } else toast(res.message, 'err');
+}
+
+// 列印空白請款單範本
+function printBlankReq() {
+  const printArea = document.getElementById('printArea');
+  const rows = Array(6).fill(`
+    <tr>
+      <td style="padding:12px 12px;border:1.5px solid #000"></td>
+      <td style="padding:12px 12px;border:1.5px solid #000"></td>
+      <td style="padding:12px 12px;border:1.5px solid #000;text-align:right"></td>
+    </tr>
+  `).join('');
+
+  printArea.innerHTML = `
+    <div style="max-width:700px;margin:0 auto;font-family:'Noto Sans TC',sans-serif;color:#000;padding:32px">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:22px;font-weight:700;letter-spacing:0.1em">請 款 單</div>
+        <div style="font-size:13px;color:#000;margin-top:4px">DanceSoul 靈動力肢體開發有限公司</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+        <tr>
+          <td style="padding:10px 12px;border:1.5px solid #000;background:#eee;width:100px;font-weight:600">單號</td>
+          <td style="padding:10px 12px;border:1.5px solid #000"></td>
+          <td style="padding:10px 12px;border:1.5px solid #000;background:#eee;width:100px;font-weight:600">日期</td>
+          <td style="padding:10px 12px;border:1.5px solid #000"></td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;border:1.5px solid #000;background:#eee;font-weight:600">所屬單位</td>
+          <td style="padding:10px 12px;border:1.5px solid #000"></td>
+          <td style="padding:10px 12px;border:1.5px solid #000;background:#eee;font-weight:600">請款人</td>
+          <td style="padding:10px 12px;border:1.5px solid #000"></td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;border:1.5px solid #000;background:#eee;font-weight:600">付款帳戶</td>
+          <td style="padding:10px 12px;border:1.5px solid #000"></td>
+          <td style="padding:10px 12px;border:1.5px solid #000;background:#eee;font-weight:600">附件</td>
+          <td style="padding:10px 12px;border:1.5px solid #000"></td>
+        </tr>
+      </table>
+
+      <div style="font-weight:600;margin-bottom:8px">費用明細</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+        <thead>
+          <tr style="background:#eee">
+            <th style="padding:10px 12px;border:1.5px solid #000;text-align:left;width:160px">科目</th>
+            <th style="padding:10px 12px;border:1.5px solid #000;text-align:left">說明</th>
+            <th style="padding:10px 12px;border:1.5px solid #000;text-align:right;width:120px">金額</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+          <tr style="background:#eee;font-weight:700">
+            <td colspan="2" style="padding:10px 12px;border:1.5px solid #000;text-align:right">合計</td>
+            <td style="padding:10px 12px;border:1.5px solid #000;text-align:right">NT$</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px">
+        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:13px">請款人</div>
+        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:13px">主管核准</div>
+        <div style="text-align:center;border-top:1.5px solid #000;padding-top:8px;font-size:13px">財務確認</div>
+      </div>
+    </div>
+  `;
+  window.print();
 }
 
 // 列印請款單
