@@ -2186,6 +2186,18 @@ async function renderHR() {
           <input class="form-input" type="number" id="empSalaryAmt">
         </div>
         <div class="form-row">
+          <label class="form-label">身分證字號</label>
+          <input class="form-input" type="text" id="empIdNumber" placeholder="A123456789">
+        </div>
+        <div class="form-row">
+          <label class="form-label">出生年月日</label>
+          <input class="form-input" type="date" id="empBirthDate">
+        </div>
+        <div class="form-row">
+          <label class="form-label">戶籍地址</label>
+          <input class="form-input" type="text" id="empAddress">
+        </div>
+        <div class="form-row">
           <label class="form-label">備註</label>
           <input class="form-input" type="text" id="empNote">
         </div>
@@ -2436,6 +2448,9 @@ function openEmpModal(emp) {
   document.getElementById('empStart').value = emp?.startDate || '';
   document.getElementById('empSalaryType').value = emp?.salaryType || '月薪';
   document.getElementById('empSalaryAmt').value = emp?.salaryAmount || '';
+  document.getElementById('empIdNumber').value = emp?.idNumber || '';
+  document.getElementById('empBirthDate').value = emp?.birthDate || '';
+  document.getElementById('empAddress').value = emp?.address || '';
   document.getElementById('empNote').value = emp?.note || '';
   document.getElementById('empModal').classList.add('show');
 }
@@ -2454,6 +2469,9 @@ async function saveEmployee() {
     startDate: document.getElementById('empStart').value,
     salaryType: document.getElementById('empSalaryType').value,
     salaryAmount: parseFloat(document.getElementById('empSalaryAmt').value) || 0,
+    idNumber: document.getElementById('empIdNumber').value,
+    birthDate: document.getElementById('empBirthDate').value,
+    address: document.getElementById('empAddress').value,
     note: document.getElementById('empNote').value
   };
   if (!emp.name || !emp.startDate) { toast('姓名和到職日必填', 'err'); return; }
