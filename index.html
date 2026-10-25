@@ -2044,6 +2044,47 @@ function calcAnnualLeave(startDate) {
   return Math.min(15 + Math.floor(years - 10) + 1, 30);
 }
 
+// 計算當批特休的起訖日
+function calcLeaveExpiry(startDate, leaveType) {
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffMs = now - start;
+  const months = diffMs / (1000*60*60*24*30.44);
+  const years = diffMs / (1000*60*60*24*365.25);
+
+  if (leaveType === 'calendar') {
+    // 曆年制：每年 1/1～12/31
+    const thisYear = now.getFullYear();
+    const batchStart = new Date(thisYear, 0, 1);
+    const batchEnd = new Date(thisYear, 11, 31);
+    const daysLeft = Math.ceil((batchEnd - now) / (1000*60*60*24));
+    return { start: batchStart, end: batchEnd, daysLeft };
+  }
+
+  // 週年制
+  let batchStart;
+  if (months < 6) {
+    const s = new Date(start); s.setMonth(s.getMonth()+6);
+    return { start: s, end: null, upcoming: true };
+  } else if (years < 1) {
+    batchStart = new Date(start); batchStart.setMonth(batchStart.getMonth()+6);
+  } else {
+    const fullYears = Math.floor(years);
+    batchStart = new Date(start); batchStart.setFullYear(batchStart.getFullYear()+fullYears);
+  }
+  const batchEnd = new Date(batchStart);
+  batchEnd.setFullYear(batchEnd.getFullYear()+1);
+  batchEnd.setDate(batchEnd.getDate()-1);
+
+  const daysLeft = Math.ceil((batchEnd - now) / (1000*60*60*24));
+  return { start: batchStart, end: batchEnd, daysLeft };
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  return d.toISOString().split('T')[0];
+}
+
 function calcSeniority(startDate) {
   const start = new Date(startDate);
   const now = new Date();
@@ -2184,6 +2225,13 @@ async function renderHR() {
           <input class="form-input" type="date" id="empStart">
         </div>
         <div class="form-row">
+          <label class="form-label">特休制度</label>
+          <select class="form-input" id="empLeaveType">
+            <option value="anniversary">週年制（預設）</option>
+            <option value="calendar">曆年制</option>
+          </select>
+        </div>
+        <div class="form-row">
           <label class="form-label">薪資結構</label>
           <select class="form-input" id="empSalaryType">
             <option>月薪</option><option>鐘點</option><option>專案</option>
@@ -2239,7 +2287,7 @@ async function loadHR() {
         <table>
           <thead><tr>
             <th>姓名</th><th>職稱</th><th>單位</th><th>到職日</th><th>年資</th>
-            <th style="text-align:center">應有特休</th><th style="text-align:center">已使用</th><th style="text-align:center">剩餘</th><th style="text-align:center">補休剩餘(hr)</th><th></th>
+            <th style="text-align:center">應有特休</th><th style="text-align:center">已使用</th><th style="text-align:center">剩餘</th><th style="text-align:center">到期日</th><th style="text-align:center">補休剩餘(hr)</th><th></th>
           </tr></thead>
           <tbody>
             ${emps.map(e => {
@@ -2251,6 +2299,14 @@ async function loadHR() {
               const compEarned = empCompRecords.filter(c=>c.type==='earned').reduce((s,r)=>s+(parseFloat(r.hours)||8),0);
               const compUsed = empCompRecords.filter(c=>c.type==='used').reduce((s,r)=>s+(parseFloat(r.hours)||8),0);
               const compLeft = compEarned - compUsed;
+              const expiry = calcLeaveExpiry(e.startDate, e.leaveType);
+              const expiryStr = expiry.upcoming
+                ? `<span style="color:var(--text3);font-size:13px">${fmtDate(expiry.start)}起給假</span>`
+                : (() => {
+                    const color = expiry.daysLeft <= 30 ? '#c0392b' : expiry.daysLeft <= 90 ? '#e67e22' : 'var(--text2)';
+                    const warn = expiry.daysLeft <= 30 ? ' ⚠' : '';
+                    return `<span style="color:${color};font-size:13px;font-family:var(--mono)">${fmtDate(expiry.end)}${warn}</span>`;
+                  })();
               return `<tr>
                 <td style="font-weight:500">${e.name}</td>
                 <td style="color:var(--text2)">${e.title}</td>
@@ -2260,6 +2316,7 @@ async function loadHR() {
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">${totalLeave}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--expense-color)">${usedLeave}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${leftLeave<=0?'var(--expense-color)':'var(--income-color)'}">${leftLeave}</td>
+                <td style="text-align:center">${expiryStr}</td>
                 <td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${compLeft<=0?'var(--text3)':'var(--accent)'}">${compLeft}</td>
                 <td style="white-space:nowrap">
                   <button class="btn btn-sm" onclick="openLeaveModal('${e.id}','${e.name}',${totalLeave},${usedLeave})">特休記錄</button>
@@ -2461,6 +2518,7 @@ function openEmpModal(emp) {
   document.getElementById('empTitle').value = emp?.title || '';
   document.getElementById('empUnit').value = emp?.unit || 'STUDIO';
   document.getElementById('empStart').value = emp?.startDate || '';
+  document.getElementById('empLeaveType').value = emp?.leaveType || 'anniversary';
   document.getElementById('empSalaryType').value = emp?.salaryType || '月薪';
   document.getElementById('empSalaryAmt').value = emp?.salaryAmount || '';
   document.getElementById('empIdNumber').value = emp?.idNumber || '';
@@ -2482,6 +2540,7 @@ async function saveEmployee() {
     title: document.getElementById('empTitle').value,
     unit: document.getElementById('empUnit').value,
     startDate: document.getElementById('empStart').value,
+    leaveType: document.getElementById('empLeaveType').value,
     salaryType: document.getElementById('empSalaryType').value,
     salaryAmount: parseFloat(document.getElementById('empSalaryAmt').value) || 0,
     idNumber: document.getElementById('empIdNumber').value,
